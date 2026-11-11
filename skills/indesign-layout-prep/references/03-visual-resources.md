@@ -1,4 +1,4 @@
-# Step 4 - Propose visual resources
+# Step 2 - Propose visual resources
 
 Goal: a proposal the designer can use as a sketchbook, and the chosen pieces
 as InDesign scripts that build editable elements.
@@ -23,6 +23,9 @@ as InDesign scripts that build editable elements.
    - **Pull quote**: a sentence worth isolating.
    - **Screenshot**: a tool or interface the text describes.
    - **Image**: a photo or illustration (describe it; do not invent stock).
+   - **Reference compositions**: the boxes, cards, bands, numbered steps or
+     mind maps seen in the reference (step 1 places only text and tables).
+     Reuse them where the content fits the same pattern.
 3. For each resource write: section, type, what it represents, why it helps
    the reader, and a sketch. Prefer fewer, stronger resources over one per
    paragraph.
@@ -57,4 +60,4 @@ Examples of `build()` compositions:
 - Comparison: two columns of boxes with a heading each.
 
 Run `python3 scripts/check_es3.py` on every script, then deliver it with the
-install steps from `03-text-import.md`.
+install steps from `import-script.md`.

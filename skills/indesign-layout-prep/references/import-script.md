@@ -1,7 +1,14 @@
-# Step 3 - Import the text in one go
+# Alternative - Import the text with a script inside InDesign
 
-Goal: all the Word content inside the template, every paragraph in its
-template style, emphasis kept, pages and threaded frames added as needed.
+The default is to deliver the text already laid out in the IDML (step 1).
+Use this script instead when the user already has a document started in
+InDesign and new text arrives, when the Word file is very long and they
+prefer InDesign to create the pages, or when they ask for it.
+
+Goal: all the Word content inside their open document, every paragraph in
+its template style, emphasis kept, pages and threaded frames added as needed.
+The script's `CONFIG` mirrors the `roles` block of the style system: fill it
+from there (paths are `Group:Style`).
 
 ## Inspect the Word file first
 

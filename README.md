@@ -5,10 +5,10 @@
 A Claude skill (and Claude Code plugin) for editorial designers. It takes your
 own design reference and a Word document. Before you start designing, you get:
 
-- the **style system** taken from the reference (paragraph and character styles, colours, grid),
-- an **InDesign template (.idml)** with every style in its group and every brand colour in the swatches panel,
-- an **ExtendScript** that imports the Word text with your styles applied, keeps bold and italics, and adds the pages and threaded frames it needs,
-- a **proposal of visual resources** (key figures, diagrams, mind maps) section by section, plus scripts that build them in InDesign as editable elements.
+- the **style system** taken from your reference (paragraph and character styles, colours, grid),
+- **one InDesign file (.idml)** with every style in its group, every brand colour in the swatches panel, a table style, and **the Word text already laid out**: titles, lead, body, lists, bold and italics, tables, on threaded pages,
+- an empty **template** with the same styles, to save as `.indt` for the next document,
+- a **proposal of visual resources** (key figures, diagrams, mind maps, the boxes and cards of your reference) section by section, plus scripts that build them in InDesign as editable elements.
 
 You lose most of the mechanical work. The pacing, emphasis, images and white space stay yours.
 
@@ -60,13 +60,16 @@ for each document by its use, its goal and how it gets made.
 This workflow works when you're duplicating an existing InDesign document and
 when you're starting a clean one from scratch.
 
-### Two starting points
+### Two routes
 
-- **A. You have a reference to replicate**: a PDF (from InDesign, Figma, Canva...).
-  Claude measures it and builds the style system and the template (steps 1-2).
+- **A. You have a reference to replicate**: a PDF (from InDesign, Figma, Canva...)
+  and the Word file. Claude measures the reference, builds the style system
+  and gives you an IDML with the styles **and the text laid out** in them.
 - **B. Your styles already live in InDesign**: export your template or a
-  previous document as IDML (File > Save As > InDesign Markup). Claude reads
-  your styles from it and goes straight to importing the text (step 3).
+  previous document as IDML (File > Save As > InDesign Markup) and share it with
+  the Word file. Claude lays the text out **inside your own file**, with your
+  styles, swatches and master pages. Add a PDF of a finished piece if you want
+  Claude to follow it when choosing which style goes where.
 
 The skill ships no default styles. Every style system comes from your own
 reference or your own IDML.
@@ -77,60 +80,59 @@ reference or your own IDML.
 
 ```mermaid
 flowchart LR
-    A[Reference PDF<br/>or InDesign] --> S1
+    A[Route A: reference PDF] --> S1
+    B[Route B: your IDML] --> S1
     W[Word .docx] --> S1
-    S1[1. Style system<br/>table + JSON] -->|you validate| S2[2. IDML template<br/>save as .indt]
-    S2 --> S3[3. Import script<br/>text styled]
-    S3 --> S4[4. Visual resources<br/>proposal + .jsx]
-    S4 --> S5[5. You design<br/>in InDesign]
+    S1[1. IDML with styles<br/>+ text laid out] --> S2[2. Visual resources<br/>proposal + .jsx]
+    S2 --> S3[3. You design<br/>in InDesign]
 ```
 
 Claude does the mechanical part of each step. The final design is yours.
 
 | Step | You give | You get |
 | --- | --- | --- |
-| 0. (Case B) Your styles | Your template as IDML | `style-system.json` read from it → go to step 3 |
-| 1. Identity and styles | Reference PDF + Word | Style table (estimated values flagged) + `style-system.json` |
-| 2. IDML template | Validated table, format (e.g. A4, 20 mm, 2 columns) | `template.idml` + `specimen.idml` → save as `.indt` |
-| 3. Text import | Word document | Import mapping (well-styled Word) or `import_docx.jsx` (hand-made Word) |
-| 4. Visual resources | (from steps 1-3) | Section-by-section proposal + one `.jsx` per resource |
-| 5. Design | Your judgement | Your layout |
+| 1. Styles + laid-out text | Reference PDF (A) or your IDML (B), and the Word file | Style table (estimated values flagged), the `.idml` with the text laid out, and an empty template |
+| 2. Visual resources | (from step 1) | Section-by-section proposal + one `.jsx` per resource |
+| 3. Design | Your judgement | Your layout |
 
-Once you've saved a template, skip steps 1 and 2 for later documents.
+What step 1 places: titles and subtitles, lead, headings, body, real and typed
+lists, bold/italic/superscript as character styles, quotes, and Word tables as
+InDesign tables with a table style from your identity. What it leaves for step
+2 and for you: boxes, cards, bands, mind maps, images, covers and captions.
+
+The number of pages is an estimate (plus one spare page): InDesign composes
+the final text. If something doesn't fit it stays as overset text, never lost.
+
+**New text for a document you already started?** The skill also writes an
+ExtendScript (`import_docx.jsx`) that imports a Word file into the open
+InDesign document with your styles, keeping bold and italics and adding pages.
 
 ### Example prompts
 
-**Step 1**
+**Step 1, route A**
 > Analyse this PDF as the design and identity base, and the Word document as
-> the content to lay out. Give me the style system in a table, with every
-> element classified: paragraph and character styles with font and weight,
-> size, leading, space before and after, colour and based-on style. Organise
-> the styles in a hierarchy and include repeated resources (callouts, quotes,
-> captions, tables). Mark anything you can't measure reliably as estimated.
+> the content. Extract titles, colours and fonts into a table, then generate an
+> IDML with every paragraph, character and table style based on that identity,
+> and the Word document laid out following the same visual style.
+
+**Step 1, route B**
+> Here's my InDesign template as IDML and the Word file. Lay the text out in
+> my template using my styles.
 
 **Step 2**
-> With this style system, generate an InDesign IDML file in A4, with 20 mm
-> margins and two columns. Include every paragraph and character style grouped
-> in folders, and every colour in the swatches panel with the brand names.
-> Don't add content: only the template.
-
-**Step 3**
-> Write an InDesign script in ExtendScript (ES3). It should ask me for a .docx,
-> place it on the first page, add the pages and threaded frames it needs and
-> apply my styles using this table: "Heading 1" → Headline, "Heading 2" →
-> Subhead, "Normal" → Body. Also detect hand-made headings (short bold
-> paragraphs). Keep the italics and bold in the text.
-
-**Step 4**
 > With the context and content you've analysed, and with this identity,
 > propose graphic resources section by section. For each one: what content it
 > represents, why it helps the reader, and a sketch with the brand colours and
 > fonts. Don't lay out the full document: only the resources, in content order.
 
-The skill already knows the pitfalls these prompts guard against. It writes
-ES3 (InDesign fails on modern JavaScript), it turns bold and italics into
-character styles before clearing overrides, and it waits for you to validate
-the styles before it builds the template.
+**Alternative: script import**
+> Write an InDesign script in ExtendScript (ES3) that asks me for a .docx and
+> places it in my open document with my styles.
+
+The skill already knows the pitfalls: it never hand-writes IDML (it uses
+tested generators and checks every file before handing it over), it writes
+ES3 for InDesign scripts, and it turns bold and italics into character styles
+so they survive.
 
 ---
 
@@ -143,7 +145,7 @@ the styles before it builds the template.
    `./tools/package_skill.sh` → `dist/indesign-layout-prep.zip`.
 2. Go to **Settings > Capabilities**, make sure **Code execution** is on, and
    upload the zip under **Skills**.
-3. Start a chat, attach your reference PDF and Word file, and ask for step 1.
+3. Start a chat, attach your reference PDF (or your IDML) and the Word file, and ask for step 1.
 
 ### Claude Code (plugin)
 
@@ -180,14 +182,17 @@ skills/indesign-layout-prep/
 ├── SKILL.md                      # The workflow Claude follows
 ├── references/                   # One guide per step + ExtendScript rules
 ├── scripts/
-│   ├── build_idml.py             # style-system JSON → .idml template
-│   ├── extract_idml.py           # your existing .idml → style-system JSON
+│   ├── build_idml.py             # Route A: style system (+ Word) → .idml
+│   ├── extract_idml.py           # Route B: your .idml → style-system JSON
+│   ├── fill_idml.py              # Route B: Word laid out inside your .idml
+│   ├── idml_content.py           # Shared: Word → styled story, tables, pages
+│   ├── check_idml.py             # Structural check of any .idml
 │   ├── inspect_docx.py           # Word structure report + style map for the import script
 │   └── check_es3.py              # Catches modern JavaScript before InDesign does
 └── assets/
     ├── style-system.schema.json  # Format of the style system
-    ├── import_docx.jsx           # Step 3 import script template
-    └── visual_resource.jsx       # Step 4 resource script template + drawing helpers
+    ├── import_docx.jsx           # Alternative: import script for InDesign
+    └── visual_resource.jsx       # Step 2 resource script template + drawing helpers
 .claude-plugin/                   # Claude Code plugin + marketplace manifests
 tools/package_skill.sh            # Builds the zip for claude.ai
 ```
@@ -197,6 +202,9 @@ You can also use the tools without Claude:
 ```bash
 python3 skills/indesign-layout-prep/scripts/extract_idml.py my-template.idml -o my-styles.json
 python3 skills/indesign-layout-prep/scripts/build_idml.py my-styles.json -o my-template.idml --specimen
+python3 skills/indesign-layout-prep/scripts/build_idml.py my-styles.json -o my-document.idml --content content.docx
+python3 skills/indesign-layout-prep/scripts/fill_idml.py my-template.idml my-styles.json content.docx -o my-document.idml
+python3 skills/indesign-layout-prep/scripts/check_idml.py my-document.idml
 python3 skills/indesign-layout-prep/scripts/inspect_docx.py content.docx --style-system my-styles.json
 python3 skills/indesign-layout-prep/scripts/check_es3.py my-script.jsx
 ```
@@ -222,7 +230,7 @@ Those are what add real value to the result.
 
 Issues and pull requests are welcome, especially reports from real InDesign
 versions (what opened cleanly and what didn't), and new resource templates
-for step 4.
+for step 2.
 
 ## License
 

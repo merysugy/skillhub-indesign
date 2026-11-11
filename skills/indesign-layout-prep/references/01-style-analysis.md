@@ -1,4 +1,4 @@
-# Step 1 - Analyse identity and styles
+# Step 1, route A - Analyse identity and styles
 
 Goal: a style system the designer can validate in one read, and the same
 system as `style-system.json` for the generator.
@@ -31,7 +31,8 @@ From the PDF (or InDesign export):
    from a PDF render are estimates unless the PDF states them.
 4. **Repeated resources**: callout boxes, key figures, pull quotes, captions,
    sources, tables, icons, rules. Each becomes a style (or a set of styles)
-   and is noted for step 4.
+   and is noted for step 2 (visual resources), except plain tables, which
+   get a `tables` block.
 
 From the Word document: which roles the content actually needs (how many
 heading levels, lists, quotes, tables, footnotes, captions). Do not add styles
@@ -102,10 +103,12 @@ projects). Notes:
   `Título 1`...). The step-3 inspector uses it to write the import map.
 - Only `Black`, `Paper`, `Registration` and `None` exist without being defined.
 
-After writing it, validate by running the generator once (step 2 command) and
-fix any error before showing the table to the user.
+Then add the `roles` block (and `tables` if the content has tables) as
+explained in `02-idml-document.md`, and build the IDML.
 
-## Checkpoint
+## Deliver with the IDML
 
-Show the tables and the grid, list the estimated values, and ask the user to
-confirm or correct. Do not move to step 2 until they do.
+Show the tables and the grid with the estimated values listed, together with
+the laid-out IDML. Reviewing in InDesign is faster than reading a table, and
+a correction only means editing the JSON and running the scripts again. Do
+not move to step 2 (visual resources) until the user is happy with step 1.

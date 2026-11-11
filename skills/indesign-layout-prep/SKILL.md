@@ -1,137 +1,145 @@
 ---
 name: indesign-layout-prep
-description: Prepares documents for professional layout in Adobe InDesign instead of laying them out with AI. Extracts the design system (paragraph/character styles, colours, grid) from the user's reference PDF, or reads it from their existing InDesign file exported as IDML, generates an IDML template with grouped styles and brand swatches, writes ExtendScript (ES3) scripts that import a Word .docx with the template styles applied, and proposes visual resources (key figures, diagrams, mind maps) section by section as InDesign scripts. Use when the user mentions InDesign, IDML, .indd/.indt, ExtendScript or .jsx for InDesign, maquetar/maquetación, a whitepaper, report, magazine or brochure to lay out, a style sheet or "sistema de estilos" from a PDF, or importing a Word document into InDesign.
+description: Prepares documents for professional layout in Adobe InDesign instead of laying them out with AI. Extracts the design system (paragraph/character styles, colours, grid) from the user's reference PDF, or reads it from their own InDesign file exported as IDML, and delivers an IDML with every style, swatch and table style plus the Word .docx content already laid out in those styles (titles, body, lists, emphasis, tables, threaded pages). Then proposes visual resources (key figures, diagrams, mind maps) as editable InDesign scripts. Also writes ExtendScript (ES3) import scripts for new text. Use when the user mentions InDesign, IDML, .indd/.indt, ExtendScript or .jsx for InDesign, maquetar/maquetación, a whitepaper, report, magazine or brochure to lay out, a style sheet or "sistema de estilos" from a PDF, or putting a Word document into InDesign.
 ---
 
 # InDesign layout prep
 
-Claude does not lay out the document. Claude **prepares** it so the designer
-can lay it out in InDesign: before design starts, the designer already has a
-template with styles and swatches, the text placed and styled, and a proposal
-of visual resources. The mechanical work shrinks; the design stays human.
+Claude does not design the document. Claude **prepares** it so the designer
+can design it in InDesign. When InDesign opens the file, the styles and
+swatches are already set up, the text is placed and styled (titles, body,
+lists, emphasis, tables), and a proposal of visual resources comes with it.
+The mechanical work shrinks, and the design stays with a person.
 
-Always answer in the user's language. Files, style names and code follow the
-names the user and the brand already use.
+Always answer in the user's language. Use the style names the user and the
+brand already use in files, styles and code.
 
 ## First: is this workflow the right tool?
 
-- **Use it** when the result must be professional: print-ready or
+- **Use it** when the result has to be professional: print-ready or
   device-ready, long or important documents (whitepapers, reports, magazines,
   catalogues), or anything that will be iterated on in InDesign.
-- **Don't use it** for quick, low-stakes pieces Claude can produce entirely
-  (a one-page summary, an internal note). Say so and offer to make it directly.
-- Laying out the whole document with Claude and regenerating it for every
-  small fix wastes tokens; this workflow avoids that by moving the detail work
-  into InDesign.
+- **Don't use it** for quick, low-stakes pieces Claude can produce on its
+  own, such as a one-page summary or an internal note. Say so and offer to
+  make it directly.
+- Laying out a whole document with Claude and regenerating it for every
+  small fix wastes tokens. This workflow moves the detail work into InDesign.
 
-## Inputs
+## Inputs and routes
 
-Ask for what is missing, one message, no more than needed:
+Ask only for what is missing, in one message:
 
-1. **Content**: the Word document (.docx) or text to lay out.
-2. **Where the design comes from** - ask which case applies:
-   - **A. A reference to replicate**: a PDF (or a PDF export of a design in
-     Figma, InDesign, Canva...). Go through steps 1 and 2.
-   - **B. Styles that already exist in InDesign** (a template or a previous
-     document): ask for it as **IDML** (File > Save As > InDesign Markup
-     (IDML)). Read `references/existing-idml.md`, extract the style system
-     with `scripts/extract_idml.py`, and continue at step 3 using their file
-     as the template.
-3. **Format** (case A, if not obvious): page size, margins, columns, facing
+1. **Content**: the Word document (.docx) to lay out.
+2. **Where the design comes from**. Ask which route applies:
+   - **Route A, a reference to replicate**: a PDF, or a PDF export of a
+     design made in Figma, InDesign, Canva and so on.
+   - **Route B, styles that already exist in InDesign**: a template or a
+     previous document. Ask for it as **IDML** (File > Save As > InDesign
+     Markup (IDML)). If they also share a PDF of a finished piece, use it to
+     decide which of their styles and master pages go where.
+3. **Format** (route A, if not obvious): page size, margins, columns, facing
    pages, print or screen.
 
-No style system is bundled with this skill: every project's styles come from
-its own reference (case A) or its own IDML (case B). Never reuse styles,
+No style system is bundled with this skill. Every project's styles come from
+its own reference (route A) or its own IDML (route B). Never reuse styles,
 colours or fonts from another project.
 
-## The five steps
+## The three steps
 
-Work one step at a time. End each step with what was produced and what the
-user should check, then wait for their go-ahead before the next step.
+Work through one step at a time. End each step with what was produced and
+what the user should check, then wait for their go-ahead.
 
-### Step 1 - Analyse identity and styles
+### Step 1: Styles and laid-out text in one IDML
 
-Read `references/01-style-analysis.md` and follow it. Deliver:
-- A style table: paragraph and character styles, each with font and weight,
-  size, leading, space before/after, colour, based-on style and group,
-  in hierarchy order; plus repeated resources (callouts, quotes, captions,
-  tables) and the colour palette.
-- Anything not measurable with confidence is marked **estimated**.
-- A `style-system.json` file following `assets/style-system.schema.json`,
-  built only from what this reference shows.
+**Route A.** Read `references/01-style-analysis.md`, then
+`references/02-idml-document.md`.
+1. Analyse the PDF and the Word file. Write `style-system.json` (schema in
+   `assets/style-system.schema.json`) with the grid, colours, paragraph and
+   character styles, the `roles` that say which style each part of the
+   content gets, and a `tables` block if the content has tables.
+2. Build the document and the empty template, then check both:
+   ```bash
+   python3 scripts/build_idml.py style-system.json -o <name>.idml --content content.docx
+   python3 scripts/build_idml.py style-system.json -o <name>-template.idml
+   python3 scripts/check_idml.py <name>.idml <name>-template.idml
+   ```
+3. Deliver everything together: the style table (with estimated values
+   flagged), the laid-out IDML and the empty template. Corrections are
+   cheap: fix the JSON and run the scripts again.
 
-**Checkpoint:** do not generate the template until the user validates or
-corrects the table. Apply their corrections to the JSON.
-
-### Step 2 - Generate the IDML template
-
-Read `references/02-idml-template.md`. Run:
-
+**Route B.** Read `references/existing-idml.md`.
 ```bash
-python3 scripts/build_idml.py style-system.json -o <name>-template.idml
-python3 scripts/build_idml.py style-system.json -o <name>-specimen.idml --specimen
+python3 scripts/extract_idml.py their.idml -o style-system.json   # then add roles
+python3 scripts/fill_idml.py their.idml style-system.json content.docx -o <name>.idml
+python3 scripts/check_idml.py <name>.idml
 ```
+Show which of their styles you mapped to each role, before or with the result.
 
-Never hand-write IDML XML: always use the generator, and fix the JSON if it
-reports an error. Deliver both files. The template has no content; the
-specimen shows one sample paragraph per style for review. Tell the user to
-open the template in InDesign and save it as `.indt` to reuse it.
+In both routes:
+- Never hand-write IDML XML. Always use the scripts, and fix the JSON when
+  they report an error.
+- Never deliver an IDML that `check_idml.py` rejects.
+- The page count is an estimate with one spare page. InDesign composes the
+  final text, and anything that does not fit stays as overset text, so
+  nothing is ever lost. Tell the user.
+- Pass on the script's report: the styles, lists, tables and hashtags it
+  handled, and anything the user should edit, such as images in the Word
+  file (they are not placed) or social-media phrases.
 
-### Step 3 - Import the text with a script
+### Step 2: Propose visual resources
 
-Read `references/03-text-import.md`. First inspect the Word file:
-
-```bash
-python3 scripts/inspect_docx.py content.docx --style-system style-system.json
-```
-
-- **Well-styled Word** (real Heading 1/2, Normal): no script needed. Explain
-  how to map styles in InDesign's import options.
-- **Hand-made Word** (bold lines as headings, typed dashes, manual indents):
-  copy `assets/import_docx.jsx`, fill its `CONFIG` (style map from the
-  inspector output, style paths as `Group:Style`, non-ASCII characters as
-  `\uXXXX` escapes), and deliver it.
-
-Before delivering any `.jsx`, read `references/extendscript-rules.md` and run
-`python3 scripts/check_es3.py <file>.jsx`. Fix every error.
-
-### Step 4 - Propose visual resources
-
-Read `references/04-visual-resources.md`. Using the content and identity
-already analysed, propose resources section by section (key figure, diagram,
-mind map, comparison, screenshot, image): what each represents, why it helps
-the reader, and a sketch in the brand colours and fonts. Do not lay out the
-full document: only the resources, in content order.
+Read `references/03-visual-resources.md`. Using the content and the identity
+already analysed, propose resources section by section: key figures,
+diagrams, mind maps, comparisons, callout boxes, cards, screenshots, images.
+For each one, say what it represents and why it helps the reader, and give a
+sketch in the brand colours and fonts. Don't lay out the full document: only
+the resources, in content order. Compositions in the reference that are not
+plain text or tables (boxes, cards, bands, mind maps) belong here, not in
+step 1.
 
 For each resource the user picks, adapt `assets/visual_resource.jsx` so it
 builds that element inside InDesign with the document's swatches and styles,
-fully editable. Check it with `check_es3.py`.
+fully editable. Check it with `scripts/check_es3.py`.
 
-### Step 5 - Hand over to design
+### Step 3: Hand over to design
 
-Summarise what is ready (template, styled text, resources) and what is left
-to the designer: page rhythm, emphasis and breathing room, images, white
-space, final details. Offer help with specific scripts (e.g. a table style,
-a TOC) but do not try to finish the layout.
+Summarise what is ready and what is left to the designer: page rhythm,
+emphasis and breathing room, images, white space, final details. Offer help
+with specific scripts (a TOC, page fitting), but don't try to finish the
+layout.
+
+## Alternative: import text with a script inside InDesign
+
+Read `references/import-script.md` when the user:
+- already has a document started in InDesign and new text arrives,
+- has a very long Word file and prefers InDesign to create the pages, or
+- asks for the script approach.
+
+Fill in `assets/import_docx.jsx` (its `CONFIG` mirrors the `roles` block),
+read `references/extendscript-rules.md`, and run `scripts/check_es3.py`
+before delivering.
 
 ## Files in this skill
 
 | File | Use |
 | --- | --- |
-| `references/01-style-analysis.md` | How to extract the style system and write the table + JSON |
-| `references/02-idml-template.md` | Running the generator, options, limits |
-| `references/03-text-import.md` | Word import: both cases, configuring `import_docx.jsx`, installing scripts |
-| `references/04-visual-resources.md` | Resource proposal format and turning resources into scripts |
+| `references/01-style-analysis.md` | Route A: measure the reference, write the table and the JSON |
+| `references/02-idml-document.md` | Route A: roles, tables, build and check the IDML |
+| `references/existing-idml.md` | Route B: work inside the user's own IDML |
+| `references/03-visual-resources.md` | Step 2: resource proposal and resource scripts |
+| `references/import-script.md` | Alternative: ExtendScript import inside InDesign |
 | `references/extendscript-rules.md` | ES3 rules and InDesign scripting pitfalls |
-| `references/existing-idml.md` | Case B: the user already has styles in InDesign |
-| `scripts/build_idml.py` | style-system JSON to `.idml` template |
-| `scripts/extract_idml.py` | Existing `.idml` to style-system JSON (case B) |
-| `scripts/inspect_docx.py` | Word structure report + ready-made style map |
+| `scripts/build_idml.py` | Route A: style system (+ Word) to `.idml` |
+| `scripts/extract_idml.py` | Route B: existing `.idml` to style-system JSON |
+| `scripts/fill_idml.py` | Route B: Word content laid out inside the user's `.idml` |
+| `scripts/idml_content.py` | Shared: Word reading, roles, story, tables, pages |
+| `scripts/check_idml.py` | Structural check of any `.idml` before delivery |
+| `scripts/inspect_docx.py` | Report on the Word file's structure |
 | `scripts/check_es3.py` | Catches modern JavaScript in `.jsx` files |
-| `assets/style-system.schema.json` | Format of the style system |
-| `assets/import_docx.jsx` | Step 3 import script template |
-| `assets/visual_resource.jsx` | Step 4 resource script template with drawing helpers |
+| `assets/style-system.schema.json` | Format of the style system, roles and tables |
+| `assets/import_docx.jsx` | Alternative import script template |
+| `assets/visual_resource.jsx` | Step 2 resource script template with drawing helpers |
 
-If code execution is not available, still deliver the table, the JSON and the
-scripts, and tell the user how to run `build_idml.py` locally (Python 3, no
-extra packages).
+If code execution is not available, still deliver the table, the JSON and
+the scripts, and tell the user how to run them locally. They only need
+Python 3.

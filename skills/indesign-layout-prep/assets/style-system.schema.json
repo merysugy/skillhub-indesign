@@ -1,53 +1,132 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "InDesign style system",
-  "description": "Input for scripts/build_idml.py. Type sizes are in points; page geometry is in millimetres. Unknown keys are ignored by the generator, so you can keep notes (role, source, maps_from, notes, estimated) next to each item.",
+  "description": "Input for scripts/build_idml.py and scripts/fill_idml.py. Type sizes are in points; page geometry is in millimetres. Unknown keys are ignored by the generator, so you can keep notes (role, source, maps_from, notes, estimated) next to each item.",
   "type": "object",
-  "required": ["name", "paragraph_styles"],
+  "required": [
+    "name",
+    "paragraph_styles"
+  ],
   "properties": {
-    "name": { "type": "string", "description": "Template name." },
-    "source": { "type": "string", "description": "Where the system was extracted from." },
+    "name": {
+      "type": "string",
+      "description": "Template name."
+    },
+    "source": {
+      "type": "string",
+      "description": "Where the system was extracted from."
+    },
     "document": {
       "type": "object",
       "properties": {
         "page_size": {
           "description": "A3, A4, A5, B5, Letter, Legal, Tabloid, or a custom size.",
           "oneOf": [
-            { "type": "string" },
+            {
+              "type": "string"
+            },
             {
               "type": "object",
-              "required": ["width_mm", "height_mm"],
+              "required": [
+                "width_mm",
+                "height_mm"
+              ],
               "properties": {
-                "width_mm": { "type": "number" },
-                "height_mm": { "type": "number" }
+                "width_mm": {
+                  "type": "number"
+                },
+                "height_mm": {
+                  "type": "number"
+                }
               }
             }
           ]
         },
-        "orientation": { "enum": ["portrait", "landscape"] },
-        "facing_pages": { "type": "boolean", "default": false },
+        "orientation": {
+          "enum": [
+            "portrait",
+            "landscape"
+          ]
+        },
+        "facing_pages": {
+          "type": "boolean",
+          "default": false
+        },
         "margins_mm": {
           "description": "One number for all sides, or each side. With facing pages, inside/outside follow the spine; without, inside = left and outside = right.",
           "oneOf": [
-            { "type": "number" },
+            {
+              "type": "number"
+            },
             {
               "type": "object",
-              "required": ["top", "bottom", "inside", "outside"],
+              "required": [
+                "top",
+                "bottom",
+                "inside",
+                "outside"
+              ],
               "properties": {
-                "top": { "type": "number" },
-                "bottom": { "type": "number" },
-                "inside": { "type": "number" },
-                "outside": { "type": "number" }
+                "top": {
+                  "type": "number"
+                },
+                "bottom": {
+                  "type": "number"
+                },
+                "inside": {
+                  "type": "number"
+                },
+                "outside": {
+                  "type": "number"
+                }
               }
             }
           ]
         },
-        "columns": { "type": "integer", "minimum": 1, "default": 1, "description": "Columns of the page grid (margin guides)." },
-        "text_frame_columns": { "type": "integer", "minimum": 1, "description": "Columns of the text frame on page 1 when they differ from the grid, e.g. a 4-column grid with 1-column running text. Defaults to columns." },
-        "gutter_mm": { "type": "number", "default": 5 },
-        "bleed_mm": { "type": "number", "default": 3 },
-        "units": { "enum": ["mm", "cm", "pt", "pica", "in"], "default": "mm" },
-        "default_paragraph_style": { "type": "string", "description": "Style applied to the empty text frame on page 1." }
+        "columns": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1,
+          "description": "Columns of the page grid (margin guides)."
+        },
+        "text_frame_columns": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Columns of the text frame on page 1 when they differ from the grid, e.g. a 4-column grid with 1-column running text. Defaults to columns."
+        },
+        "gutter_mm": {
+          "type": "number",
+          "default": 5
+        },
+        "bleed_mm": {
+          "type": "number",
+          "default": 3
+        },
+        "units": {
+          "enum": [
+            "mm",
+            "cm",
+            "pt",
+            "pica",
+            "in"
+          ],
+          "default": "mm"
+        },
+        "default_paragraph_style": {
+          "type": "string",
+          "description": "Style applied to the empty text frame on page 1."
+        },
+        "avg_char_em": {
+          "type": "number",
+          "default": 0.52,
+          "description": "Average character width as a fraction of the type size, used to estimate how many pages the content needs. Wide fonts (Montserrat, Verdana) ~0.56; condensed ~0.45."
+        },
+        "spare_pages": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 1,
+          "description": "Extra pages added after the estimate when laying out content."
+        }
       }
     },
     "colors": {
@@ -55,88 +134,431 @@
       "description": "Brand swatches. Black, Paper, Registration and None always exist and can be referenced by name.",
       "items": {
         "type": "object",
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "properties": {
-          "name": { "type": "string", "description": "Swatch name exactly as the brand calls it." },
-          "cmyk": { "type": "array", "items": { "type": "number", "minimum": 0, "maximum": 100 }, "minItems": 4, "maxItems": 4 },
-          "rgb": { "type": "array", "items": { "type": "number", "minimum": 0, "maximum": 255 }, "minItems": 3, "maxItems": 3 },
-          "hex": { "type": "string", "pattern": "^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" },
-          "spot": { "type": "boolean", "default": false },
-          "role": { "type": "string" },
-          "estimated": { "type": "boolean" }
+          "name": {
+            "type": "string",
+            "description": "Swatch name exactly as the brand calls it."
+          },
+          "cmyk": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "rgb": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "hex": {
+            "type": "string",
+            "pattern": "^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$"
+          },
+          "spot": {
+            "type": "boolean",
+            "default": false
+          },
+          "role": {
+            "type": "string"
+          },
+          "estimated": {
+            "type": "boolean"
+          }
         },
         "oneOf": [
-          { "required": ["cmyk"] },
-          { "required": ["rgb"] },
-          { "required": ["hex"] }
+          {
+            "required": [
+              "cmyk"
+            ]
+          },
+          {
+            "required": [
+              "rgb"
+            ]
+          },
+          {
+            "required": [
+              "hex"
+            ]
+          }
         ]
       }
     },
     "paragraph_styles": {
       "type": "array",
-      "items": { "$ref": "#/definitions/paragraphStyle" }
+      "items": {
+        "$ref": "#/definitions/paragraphStyle"
+      }
     },
     "character_styles": {
       "type": "array",
-      "items": { "$ref": "#/definitions/characterStyle" }
+      "items": {
+        "$ref": "#/definitions/characterStyle"
+      }
+    },
+    "roles": {
+      "type": "object",
+      "description": "Which style to use for each part of the Word content (needed with --content and by fill_idml.py). Word styles listed in a paragraph style's maps_from go to that style; everything else follows these roles. Leave a role out to switch that detection off.",
+      "required": [
+        "body"
+      ],
+      "properties": {
+        "body": {
+          "type": "string",
+          "description": "Running text; also any Word style without a maps_from match."
+        },
+        "lead": {
+          "type": "string",
+          "description": "First body paragraph (standfirst)."
+        },
+        "title": {
+          "type": "string",
+          "description": "First hand-made heading (short, all-bold paragraph)."
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Second half of the title when title_separator splits it."
+        },
+        "heading": {
+          "type": "string",
+          "description": "Other hand-made headings (short, all-bold paragraphs)."
+        },
+        "bullet": {
+          "type": "string",
+          "description": "Real Word bullet lists and typed '- ' lists."
+        },
+        "numbered": {
+          "type": "string",
+          "description": "Real Word numbered lists and typed '1. ' lists (falls back to bullet)."
+        },
+        "quote": {
+          "type": "string",
+          "description": "Body paragraphs indented by hand at least quote_min_indent_pt."
+        },
+        "table_header": {
+          "type": "string",
+          "description": "Text in table header rows."
+        },
+        "table_body": {
+          "type": "string",
+          "description": "Text in table body rows."
+        },
+        "bold": {
+          "type": "string",
+          "description": "Character style name."
+        },
+        "italic": {
+          "type": "string",
+          "description": "Character style name."
+        },
+        "bold_italic": {
+          "type": "string",
+          "description": "Character style name."
+        },
+        "superscript": {
+          "type": "string",
+          "description": "Character style name."
+        },
+        "hashtag": {
+          "type": "string",
+          "description": "Applied to #hashtags when hashtags is 'style'."
+        },
+        "title_separator": {
+          "type": "string",
+          "description": "Split a 'Title - Subtitle' paragraph at this text, e.g. ' - '."
+        },
+        "hashtags": {
+          "enum": [
+            "keep",
+            "remove",
+            "style"
+          ],
+          "default": "keep",
+          "description": "What to do with #hashtags left over from social media copy."
+        },
+        "heading_max_chars": {
+          "type": "integer",
+          "default": 120
+        },
+        "quote_min_indent_pt": {
+          "type": "number",
+          "default": 18
+        },
+        "table_first_row_header": {
+          "type": "boolean",
+          "default": true,
+          "description": "Treat the first row as header when Word marks none."
+        }
+      }
+    },
+    "tables": {
+      "type": "object",
+      "description": "Table style for Word tables, built from the identity. Generates a table style and two cell styles (header/body) whose text uses roles.table_header / roles.table_body.",
+      "properties": {
+        "style_name": {
+          "type": "string",
+          "default": "Table"
+        },
+        "header_cell_style": {
+          "type": "string",
+          "description": "Cell style name for the header (default '<style_name> header')."
+        },
+        "body_cell_style": {
+          "type": "string",
+          "description": "Cell style name for the body (default '<style_name> body')."
+        },
+        "header_fill": {
+          "type": "string",
+          "description": "Swatch name."
+        },
+        "header_tint": {
+          "type": "number"
+        },
+        "body_fill": {
+          "type": "string"
+        },
+        "body_tint": {
+          "type": "number"
+        },
+        "rule_color": {
+          "type": "string",
+          "description": "Swatch for the line under each row."
+        },
+        "rule_weight_pt": {
+          "type": "number",
+          "default": 0.5
+        },
+        "border_color": {
+          "type": "string"
+        },
+        "border_weight_pt": {
+          "type": "number",
+          "default": 0
+        },
+        "cell_inset_mm": {
+          "type": "number",
+          "default": 1.5
+        },
+        "space_before_pt": {
+          "type": "number",
+          "default": 6
+        },
+        "space_after_pt": {
+          "type": "number",
+          "default": 6
+        },
+        "vertical_align": {
+          "enum": [
+            "top",
+            "center",
+            "bottom"
+          ],
+          "default": "top"
+        }
+      }
     }
   },
   "definitions": {
     "common": {
       "type": "object",
-      "required": ["name"],
+      "required": [
+        "name"
+      ],
       "properties": {
-        "name": { "type": "string", "description": "Unique within its kind. No ':' characters." },
-        "group": { "type": "string", "description": "Style group (folder). Use '/' for nested groups, e.g. 'Headings/Chapter'." },
-        "based_on": { "type": "string", "description": "Name of the parent style of the same kind." },
-        "font": { "type": "string", "description": "Font family as InDesign names it, e.g. 'Minion Pro'." },
-        "font_style": { "type": "string", "description": "Font style as InDesign names it, e.g. 'Regular', 'Bold', 'Semibold Italic'." },
-        "size_pt": { "type": "number" },
-        "leading_pt": { "description": "Points, or 'auto'.", "oneOf": [{ "type": "number" }, { "const": "auto" }] },
-        "color": { "type": "string", "description": "Swatch name." },
-        "tint": { "type": "number", "minimum": 0, "maximum": 100 },
-        "tracking": { "type": "integer", "description": "Thousandths of an em." },
-        "case": { "enum": ["normal", "uppercase", "small-caps", "caps-to-small-caps"] },
-        "underline": { "type": "boolean" },
-        "strikethrough": { "type": "boolean" },
-        "language": { "type": "string", "description": "Raw InDesign language id, e.g. '$ID/English: USA'. Leave out unless you know the exact id." },
+        "name": {
+          "type": "string",
+          "description": "Unique within its kind. No ':' characters."
+        },
+        "group": {
+          "type": "string",
+          "description": "Style group (folder). Use '/' for nested groups, e.g. 'Headings/Chapter'."
+        },
+        "based_on": {
+          "type": "string",
+          "description": "Name of the parent style of the same kind."
+        },
+        "font": {
+          "type": "string",
+          "description": "Font family as InDesign names it, e.g. 'Minion Pro'."
+        },
+        "font_style": {
+          "type": "string",
+          "description": "Font style as InDesign names it, e.g. 'Regular', 'Bold', 'Semibold Italic'."
+        },
+        "size_pt": {
+          "type": "number"
+        },
+        "leading_pt": {
+          "description": "Points, or 'auto'.",
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "const": "auto"
+            }
+          ]
+        },
+        "color": {
+          "type": "string",
+          "description": "Swatch name."
+        },
+        "tint": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "tracking": {
+          "type": "integer",
+          "description": "Thousandths of an em."
+        },
+        "case": {
+          "enum": [
+            "normal",
+            "uppercase",
+            "small-caps",
+            "caps-to-small-caps"
+          ]
+        },
+        "underline": {
+          "type": "boolean"
+        },
+        "strikethrough": {
+          "type": "boolean"
+        },
+        "language": {
+          "type": "string",
+          "description": "Raw InDesign language id, e.g. '$ID/English: USA'. Leave out unless you know the exact id."
+        },
         "estimated": {
           "description": "true, or the list of fields that were estimated rather than measured.",
-          "oneOf": [{ "type": "boolean" }, { "type": "array", "items": { "type": "string" } }]
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
         },
-        "notes": { "type": "string" }
+        "notes": {
+          "type": "string"
+        }
       }
     },
     "paragraphStyle": {
       "allOf": [
-        { "$ref": "#/definitions/common" },
+        {
+          "$ref": "#/definitions/common"
+        },
         {
           "properties": {
-            "space_before_pt": { "type": "number" },
-            "space_after_pt": { "type": "number" },
-            "first_line_indent_pt": { "type": "number" },
-            "left_indent_pt": { "type": "number" },
-            "right_indent_pt": { "type": "number" },
-            "align": { "enum": ["left", "center", "right", "justify", "justify-all", "towards-spine", "away-from-spine"] },
-            "hyphenate": { "type": "boolean" },
-            "keep_with_next": { "type": "integer", "minimum": 0, "description": "Lines to keep with the next paragraph." },
-            "keep_lines_together": { "type": "boolean" },
-            "start": { "enum": ["anywhere", "next-column", "next-frame", "next-page", "next-odd-page", "next-even-page"] },
-            "span_columns": { "type": "boolean", "description": "Paragraph spans all columns (good for headlines in multi-column layouts)." },
-            "list": { "enum": ["none", "bullet", "numbered"] },
-            "next_style": { "type": "string", "description": "Paragraph style that follows when you press Return." },
-            "maps_from": { "type": "array", "items": { "type": "string" }, "description": "Word style names that should become this style on import (used by import_docx.jsx)." },
-            "sample_text": { "type": "string", "description": "Text used by --specimen." }
+            "space_before_pt": {
+              "type": "number"
+            },
+            "space_after_pt": {
+              "type": "number"
+            },
+            "first_line_indent_pt": {
+              "type": "number"
+            },
+            "left_indent_pt": {
+              "type": "number"
+            },
+            "right_indent_pt": {
+              "type": "number"
+            },
+            "align": {
+              "enum": [
+                "left",
+                "center",
+                "right",
+                "justify",
+                "justify-all",
+                "towards-spine",
+                "away-from-spine"
+              ]
+            },
+            "hyphenate": {
+              "type": "boolean"
+            },
+            "keep_with_next": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Lines to keep with the next paragraph."
+            },
+            "keep_lines_together": {
+              "type": "boolean"
+            },
+            "start": {
+              "enum": [
+                "anywhere",
+                "next-column",
+                "next-frame",
+                "next-page",
+                "next-odd-page",
+                "next-even-page"
+              ]
+            },
+            "span_columns": {
+              "type": "boolean",
+              "description": "Paragraph spans all columns (good for headlines in multi-column layouts)."
+            },
+            "list": {
+              "enum": [
+                "none",
+                "bullet",
+                "numbered"
+              ]
+            },
+            "next_style": {
+              "type": "string",
+              "description": "Paragraph style that follows when you press Return."
+            },
+            "maps_from": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Word style names that should become this style on import (used by import_docx.jsx)."
+            },
+            "sample_text": {
+              "type": "string",
+              "description": "Text used by --specimen."
+            }
           }
         }
       ]
     },
     "characterStyle": {
       "allOf": [
-        { "$ref": "#/definitions/common" },
+        {
+          "$ref": "#/definitions/common"
+        },
         {
           "properties": {
-            "position": { "enum": ["normal", "superscript", "subscript"] }
+            "position": {
+              "enum": [
+                "normal",
+                "superscript",
+                "subscript"
+              ]
+            }
           }
         }
       ]

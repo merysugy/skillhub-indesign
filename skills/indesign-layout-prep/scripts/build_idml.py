@@ -10,9 +10,16 @@ to reuse it as a template.
 Usage:
     python3 build_idml.py style-system.json -o template.idml
     python3 build_idml.py style-system.json -o template.idml --specimen
+    python3 build_idml.py style-system.json -o document.idml --content content.docx
 
 --specimen fills the first text frame with one sample paragraph per paragraph
 style, so you can review the whole type system at a glance.
+
+--content places a Word document in the template: every paragraph gets its
+style from the `roles` block and the styles' `maps_from` lists, emphasis
+becomes character styles, Word tables become InDesign tables (styled from the
+`tables` block), and pages with threaded frames are added from an estimate
+of the text length (plus one spare page).
 
 Only the Python 3 standard library is used. See ../assets/style-system.schema.json
 for the input format. The style system is always extracted from the user's own
@@ -22,8 +29,12 @@ reference (step 1) or from their IDML (extract_idml.py); none is bundled.
 import argparse
 import json
 import sys
+import os
 import zipfile
 from xml.sax.saxutils import escape, quoteattr
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import idml_content  # noqa: E402
 
 DOM_VERSION = "8.0"  # CS6 IDML: opens in every InDesign from CS6 to current CC
 PKG_NS = "http://ns.adobe.com/AdobeInDesign/idml/1.0/packaging"
@@ -359,7 +370,8 @@ def render_style_tree(node, element, group_element, kind, render, indent):
     return out
 
 
-def styles_xml(paragraph_styles, para_by_name, character_styles, char_by_name, refs):
+def styles_xml(paragraph_styles, para_by_name, character_styles, char_by_name, refs,
+               table_xml=None):
     def render_para(style, pad):
         attrs, props = style_attributes(style, refs, True)
         if style.get("based_on"):
@@ -412,14 +424,17 @@ def styles_xml(paragraph_styles, para_by_name, character_styles, char_by_name, r
                  '    <ObjectStyle Self="ObjectStyle/$ID/[Normal Text Frame]" '
                  'Name="$ID/[Normal Text Frame]"/>\n'
                  '  </RootObjectStyleGroup>')
+    cell_extra, table_extra = table_xml if table_xml else ("", "")
     lines.append('  <RootTableStyleGroup Self="u7b">\n'
                  '    <TableStyle Self="TableStyle/$ID/[No table style]" '
                  'Name="$ID/[No table style]"/>\n'
-                 '    <TableStyle Self="TableStyle/$ID/[Basic Table]" Name="$ID/[Basic Table]"/>\n'
-                 '  </RootTableStyleGroup>')
+                 '    <TableStyle Self="TableStyle/$ID/[Basic Table]" Name="$ID/[Basic Table]"/>'
+                 + ("\n" + table_extra if table_extra else "") +
+                 '\n  </RootTableStyleGroup>')
     lines.append('  <RootCellStyleGroup Self="u7c">\n'
-                 '    <CellStyle Self="CellStyle/$ID/[None]" Name="$ID/[None]"/>\n'
-                 '  </RootCellStyleGroup>')
+                 '    <CellStyle Self="CellStyle/$ID/[None]" Name="$ID/[None]"/>'
+                 + ("\n" + cell_extra if cell_extra else "") +
+                 '\n  </RootCellStyleGroup>')
     lines.append('</idPkg:Styles>\n')
     return "\n".join(lines)
 
@@ -521,67 +536,89 @@ def master_spread_xml(s):
             % (PKG_NS, DOM_VERSION, count, pages))
 
 
-def spread_xml(s):
-    top, left = s["top"], s["inside"]
-    bottom, right = s["height"] - s["bottom"], s["width"] - s["outside"]
-    corners = [(left, top), (left, bottom), (right, bottom), (right, top)]
-    points = "\n".join(
-        '              <PathPointType Anchor="{0} {1}" LeftDirection="{0} {1}" '
-        'RightDirection="{0} {1}"/>'.format(num(x), num(y)) for x, y in corners)
-    return (XML_HEAD +
-            '<idPkg:Spread xmlns:idPkg="%s" DOMVersion="%s">\n'
-            '  <Spread Self="uSpread1" PageCount="1" BindingLocation="0" ShowMasterItems="true" '
-            'AllowPageShuffle="true" ItemTransform="1 0 0 1 0 0" FlattenerOverride="Default">\n'
-            '%s\n'
-            '    <TextFrame Self="uFrame1" ParentStory="uStory1" PreviousTextFrame="n" '
-            'NextTextFrame="n" ContentType="TextType" ItemLayer="uLayer1" '
-            'ItemTransform="1 0 0 1 0 0">\n'
-            '      <Properties>\n        <PathGeometry>\n'
-            '          <GeometryPathType PathOpen="false">\n            <PathPointArray>\n'
-            '%s\n            </PathPointArray>\n          </GeometryPathType>\n'
-            '        </PathGeometry>\n      </Properties>\n'
-            '      <TextFramePreference TextColumnCount="%d" TextColumnGutter="%s"/>\n'
-            '    </TextFrame>\n  </Spread>\n</idPkg:Spread>\n'
-            % (PKG_NS, DOM_VERSION,
-               page_xml("uPage1", "1", s, "1 0 0 1 0 0", master="uMaster"),
-               points, s["frame_columns"], num(s["gutter"])))
+class StyleRefs(object):
+    """Turns style-system names into IDML self ids for idml_content."""
+
+    def __init__(self, para_by_name, char_by_name, body, table_names):
+        self.para_by_name, self.char_by_name = para_by_name, char_by_name
+        self.body = body
+        self.table_names = table_names  # (table, header cell, body cell) self ids or None
+
+    def para(self, name):
+        if not name:
+            return BASIC_PARA
+        return self.para_by_name[name]["_self"]
+
+    def char(self, name):
+        return self.char_by_name[name]["_self"] if name else NO_CHAR
+
+    def table_style(self):
+        return self.table_names[0] if self.table_names else "TableStyle/$ID/[Basic Table]"
+
+    def cell_style(self, header):
+        if not self.table_names:
+            return "CellStyle/$ID/[None]"
+        return self.table_names[1] if header else self.table_names[2]
 
 
-def story_xml(paragraph_styles, default_self, specimen):
-    paragraphs = []
-    if specimen and paragraph_styles:
-        for style in paragraph_styles:
-            label = " > ".join(style["_path"])
-            sample = style.get("sample_text") or (
-                "%s. The quick brown fox jumps over the lazy dog." % label)
-            paragraphs.append(
-                '    <ParagraphStyleRange AppliedParagraphStyle=%s>\n'
-                '      <CharacterStyleRange AppliedCharacterStyle="%s">\n'
-                '        <Content>%s</Content>\n        <Br/>\n'
-                '      </CharacterStyleRange>\n    </ParagraphStyleRange>'
-                % (quoteattr(style["_self"]), NO_CHAR, escape(sample)))
-    else:
-        paragraphs.append(
-            '    <ParagraphStyleRange AppliedParagraphStyle=%s>\n'
-            '      <CharacterStyleRange AppliedCharacterStyle="%s"/>\n'
-            '    </ParagraphStyleRange>' % (quoteattr(default_self), NO_CHAR))
-    return (XML_HEAD +
-            '<idPkg:Story xmlns:idPkg="%s" DOMVersion="%s">\n'
-            '  <Story Self="uStory1" AppliedTOCStyle="n" TrackChanges="false" '
-            'StoryTitle="$ID/" AppliedNamedGrid="n">\n'
-            '    <StoryPreference OpticalMarginAlignment="false" OpticalMarginSize="12" '
-            'FrameType="TextFrameType" StoryOrientation="Horizontal" '
-            'StoryDirection="LeftToRightDirection"/>\n'
-            '    <InCopyExportOption IncludeGraphicProxies="true" IncludeAllResources="false"/>\n'
-            '%s\n  </Story>\n</idPkg:Story>\n'
-            % (PKG_NS, DOM_VERSION, "\n".join(paragraphs)))
+def table_styles_xml(data, para_by_name, refs_colors):
+    """Cell styles and table style built from the `tables` block, or None."""
+    cfg = data.get("tables")
+    if not cfg:
+        return None, None
+    roles = data.get("roles") or {}
+    name = cfg.get("style_name", "Table")
+    inset = mm(cfg.get("cell_inset_mm", 1.5))
+    valign = {"top": "TopAlign", "center": "CenterAlign",
+              "bottom": "BottomAlign"}[cfg.get("vertical_align", "top")]
+
+    def color(key):
+        value = cfg.get(key)
+        return color_ref(value, refs_colors, "tables") if value else "Swatch/None"
+
+    rule_w = num(cfg.get("rule_weight_pt", 0.5))
+    border_w = num(cfg.get("border_weight_pt", 0))
+
+    def cell(suffix, para_role, fill_key, tint_key):
+        para_name = roles.get(para_role) or roles.get("body")
+        para_self = para_by_name[para_name]["_self"] if para_name in para_by_name else BASIC_PARA
+        cell_name = cfg.get("%s_cell_style" % suffix) or "%s %s" % (name, suffix)
+        self_ref = "CellStyle/%s" % cell_name
+        ins = num(inset)
+        xml = ('    <CellStyle Self=%s Name=%s AppliedParagraphStyle=%s TextTopInset="%s" '
+               'TextLeftInset="%s" TextBottomInset="%s" TextRightInset="%s" TopInset="%s" '
+               'LeftInset="%s" BottomInset="%s" RightInset="%s" FillColor=%s FillTint="%s" '
+               'VerticalJustification="%s" TopEdgeStrokeWeight="0" LeftEdgeStrokeWeight="0" '
+               'RightEdgeStrokeWeight="0" BottomEdgeStrokeWeight="%s" BottomEdgeStrokeColor=%s/>'
+               % (quoteattr(self_ref), quoteattr(cell_name), quoteattr(para_self),
+                  ins, ins, ins, ins, ins, ins, ins, ins, quoteattr(color(fill_key)),
+                  num(cfg.get(tint_key, 100)), valign, rule_w, quoteattr(color("rule_color"))))
+        return self_ref, xml
+
+    header_self, header_xml = cell("header", "table_header", "header_fill", "header_tint")
+    body_self, body_xml = cell("body", "table_body", "body_fill", "body_tint")
+    table_self = "TableStyle/%s" % name
+    border = color("border_color")
+    table_xml = ('    <TableStyle Self=%s Name=%s HeaderRegionSameAsBodyRegion="false" '
+                 'HeaderRegionCellStyle=%s BodyRegionCellStyle=%s SpaceBefore="%s" SpaceAfter="%s" '
+                 'TopBorderStrokeWeight="%s" TopBorderStrokeColor=%s '
+                 'BottomBorderStrokeWeight="%s" BottomBorderStrokeColor=%s '
+                 'LeftBorderStrokeWeight="%s" LeftBorderStrokeColor=%s '
+                 'RightBorderStrokeWeight="%s" RightBorderStrokeColor=%s/>'
+                 % (quoteattr(table_self), quoteattr(name), quoteattr(header_self),
+                    quoteattr(body_self), num(cfg.get("space_before_pt", 6)),
+                    num(cfg.get("space_after_pt", 6)),
+                    border_w, quoteattr(border), border_w, quoteattr(border),
+                    border_w, quoteattr(border), border_w, quoteattr(border)))
+    return (table_self, header_self, body_self), (header_xml + "\n" + body_xml, table_xml)
 
 
-def designmap_xml(name):
+def designmap_xml(name, spread_selfs, story_self, first_page, page_count):
+    spreads = "\n".join('  <idPkg:Spread src="Spreads/Spread_%s.xml"/>' % s for s in spread_selfs)
     return (XML_HEAD +
             '<?aid style="50" type="document" readerVersion="6.0" featureSet="257" '
             'product="8.0(370)" ?>\n'
-            '<Document xmlns:idPkg="%s" DOMVersion="%s" Self="d" StoryList="uStory1" '
+            '<Document xmlns:idPkg="%s" DOMVersion="%s" Self="d" StoryList="%s" '
             'Name=%s ZeroPoint="0 0" ActiveLayer="uLayer1" '
             'CMYKProfile="Coated FOGRA39 (ISO 12647-2:2004)" RGBProfile="sRGB IEC61966-2.1" '
             'SolidColorIntent="UseColorSettings" AfterBlendingIntent="UseColorSettings" '
@@ -596,13 +633,14 @@ def designmap_xml(name):
             '    <Properties><LayerColor type="enumeration">LightBlue</LayerColor></Properties>\n'
             '  </Layer>\n'
             '  <idPkg:MasterSpread src="MasterSpreads/MasterSpread_uMaster.xml"/>\n'
-            '  <idPkg:Spread src="Spreads/Spread_uSpread1.xml"/>\n'
-            '  <Section Self="uSection1" Length="1" Name="" ContinueNumbering="true" '
-            'IncludeSectionPrefix="false" Marker="" PageStart="uPage1" SectionPrefix="">\n'
+            '%s\n'
+            '  <Section Self="uSection1" Length="%d" Name="" ContinueNumbering="true" '
+            'IncludeSectionPrefix="false" Marker="" PageStart="%s" SectionPrefix="">\n'
             '    <Properties><PageNumberStyle type="enumeration">Arabic</PageNumberStyle>'
             '</Properties>\n  </Section>\n'
-            '  <idPkg:Story src="Stories/Story_uStory1.xml"/>\n'
-            '</Document>\n' % (PKG_NS, DOM_VERSION, quoteattr(name + ".indd")))
+            '  <idPkg:Story src="Stories/Story_%s.xml"/>\n'
+            '</Document>\n' % (PKG_NS, DOM_VERSION, story_self, quoteattr(name + ".indd"),
+                               spreads, page_count, first_page, story_self))
 
 
 CONTAINER_XML = (XML_HEAD +
@@ -613,11 +651,28 @@ CONTAINER_XML = (XML_HEAD +
                  '  </rootfiles>\n</container>\n')
 
 
+def check_roles(data, para_by_name, char_by_name):
+    roles = data.get("roles") or {}
+    para_roles = ("body", "lead", "title", "subtitle", "heading", "bullet", "numbered",
+                  "quote", "table_header", "table_body")
+    char_roles = ("bold", "italic", "bold_italic", "superscript", "hashtag")
+    for key in para_roles:
+        if roles.get(key) and roles[key] not in para_by_name:
+            raise StyleSystemError("roles.%s names %r, which is not a paragraph style"
+                                   % (key, roles[key]))
+    for key in char_roles:
+        if roles.get(key) and roles[key] not in char_by_name:
+            raise StyleSystemError("roles.%s names %r, which is not a character style"
+                                   % (key, roles[key]))
+    if roles.get("hashtags", "keep") not in ("keep", "remove", "style"):
+        raise StyleSystemError("roles.hashtags must be keep, remove or style")
+
+
 # --------------------------------------------------------------------------
 # Main
 # --------------------------------------------------------------------------
 
-def build(data, specimen=False):
+def build(data, specimen=False, content=None):
     settings = load_document_settings(data)
     colors, refs = load_colors(data)
     paras, para_by_name = resolve_styles(data.get("paragraph_styles", []),
@@ -640,26 +695,59 @@ def build(data, specimen=False):
             if key in style and style[key] not in table:
                 raise StyleSystemError("%r: %s must be one of %s"
                                        % (style["name"], key, ", ".join(table)))
+    check_roles(data, para_by_name, char_by_name)
 
     default_name = settings["default_style"]
-    if default_name:
-        if default_name not in para_by_name:
-            raise StyleSystemError("default_paragraph_style %r is not defined" % default_name)
-        default_self = para_by_name[default_name]["_self"]
+    if default_name and default_name not in para_by_name:
+        raise StyleSystemError("default_paragraph_style %r is not defined" % default_name)
+
+    table_names, table_xml = table_styles_xml(data, para_by_name, refs)
+    body_name = (data.get("roles") or {}).get("body") or default_name
+    style_refs = StyleRefs(para_by_name, char_by_name, body_name, table_names)
+
+    report = None
+    if content:
+        classifier = idml_content.Classifier(data)
+        items = classifier.classify(idml_content.read_docx(content))
+        pages, column_width = idml_content.pages_needed(items, data, settings)
+        report = idml_content.report_lines(classifier.report, pages)
     else:
-        default_self = BASIC_PARA
+        pages, column_width = 1, settings["width"] - settings["inside"] - settings["outside"]
+        if specimen and paras:
+            items = [{"type": "p", "style": s["name"],
+                      "runs": [(s.get("sample_text") or "%s. The quick brown fox jumps over "
+                                "the lazy dog." % " > ".join(s["_path"]), None)]}
+                     for s in paras]
+        else:
+            items = [{"type": "p", "style": default_name, "runs": [("", None)]}]
+
+    ids = idml_content.Ids("uc")
+    story_self = "uStory1"
+    body_metrics = idml_content.resolve_metrics(data)(body_name) if body_name else None
+    table_width = column_width - (float(body_metrics["left_indent_pt"]) +
+                                  float(body_metrics["right_indent_pt"]) if body_metrics else 0)
+    body = idml_content.story_body(items, style_refs, ids, table_width,
+                                   idml_content.resolve_metrics(data), data.get("tables") or {})
+    spreads, page_selfs = idml_content.spreads_xml(
+        settings, pages, "uMaster", "uLayer1", story_self, ids, DOM_VERSION, PKG_NS,
+        settings["facing"])
 
     files = [
         ("META-INF/container.xml", CONTAINER_XML),
-        ("designmap.xml", designmap_xml(data.get("name", "Template"))),
+        ("designmap.xml", designmap_xml(data.get("name", "Template"), [s for s, _ in spreads],
+                                        story_self, page_selfs[0], pages)),
         ("Resources/Graphic.xml", graphic_xml(colors)),
-        ("Resources/Styles.xml", styles_xml(paras, para_by_name, chars, char_by_name, refs)),
+        ("Resources/Styles.xml", styles_xml(paras, para_by_name, chars, char_by_name, refs,
+                                            table_xml)),
         ("Resources/Preferences.xml", preferences_xml(settings)),
         ("MasterSpreads/MasterSpread_uMaster.xml", master_spread_xml(settings)),
-        ("Spreads/Spread_uSpread1.xml", spread_xml(settings)),
-        ("Stories/Story_uStory1.xml", story_xml(paras, default_self, specimen)),
     ]
-    return files, {"paragraph": len(paras), "character": len(chars), "colors": len(colors)}
+    files += [("Spreads/Spread_%s.xml" % s, xml) for s, xml in spreads]
+    files.append(("Stories/Story_%s.xml" % story_self,
+                  idml_content.story_xml(story_self, body, DOM_VERSION, PKG_NS)))
+    counts = {"paragraph": len(paras), "character": len(chars), "colors": len(colors),
+              "pages": pages, "report": report}
+    return files, counts
 
 
 def write_idml(files, path):
@@ -689,19 +777,24 @@ def main(argv=None):
     parser.add_argument("-o", "--output", required=True, help="Output .idml path")
     parser.add_argument("--specimen", action="store_true",
                         help="Add one sample paragraph per paragraph style")
+    parser.add_argument("--content", metavar="DOCX",
+                        help="Word document to lay out in the template (needs a roles block)")
     args = parser.parse_args(argv)
 
     try:
         with open(args.style_system, encoding="utf-8") as fh:
             data = json.load(fh)
-        files, counts = build(data, specimen=args.specimen)
-    except (OSError, ValueError, KeyError, StyleSystemError) as exc:
+        files, counts = build(data, specimen=args.specimen, content=args.content)
+    except (OSError, ValueError, KeyError, StyleSystemError, idml_content.ContentError,
+            zipfile.BadZipFile) as exc:
         print("Error: %s" % exc, file=sys.stderr)
         return 1
 
     write_idml(files, args.output)
     print("Wrote %s: %d paragraph styles, %d character styles, %d colours."
           % (args.output, counts["paragraph"], counts["character"], counts["colors"]))
+    if counts["report"]:
+        print("\n".join(counts["report"]))
     estimates = list_estimates(data)
     if estimates:
         print("Estimated values to check in InDesign:")
