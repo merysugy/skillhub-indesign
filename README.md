@@ -2,6 +2,8 @@
 
 **Claude doesn't lay out the document. It prepares it so you can lay it out in InDesign.**
 
+> **Status: in development (v0.1.0).** This is the skill I use for my own documents. I'm improving it bit by bit, so expect changes. Feedback and issues are welcome.
+
 A Claude skill (and Claude Code plugin) for editorial designers. It takes your
 own design reference and a Word document. Before you start designing, you get:
 

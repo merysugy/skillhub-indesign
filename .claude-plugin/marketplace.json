@@ -12,7 +12,7 @@
       "name": "indesign-layout-prep",
       "source": "./",
       "description": "Extract a style system from a reference PDF, generate an IDML template, import Word text with styles applied, and propose visual resources as InDesign scripts.",
-      "version": "1.0.0",
+      "version": "0.1.0",
       "category": "design"
     }
   ]
