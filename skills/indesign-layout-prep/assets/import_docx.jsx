@@ -48,6 +48,11 @@ var CONFIG = {
     firstHeadingStyle: "",
     manualHeadingMaxChars: 120,
 
+    // Optional: when the title paragraph holds "Title - Subtitle", split it at
+    // this separator and give the second part subtitleStyle.
+    titleSeparator: "",
+    subtitleStyle: "",
+
     // Lists: real Word lists, and typed "- " / "1. " paragraphs.
     bulletStyle: "",
     numberedStyle: "",
@@ -62,6 +67,11 @@ var CONFIG = {
     italicStyle: "",
     boldItalicStyle: "",
     superscriptStyle: "",
+
+    // Social-media leftovers: "remove" deletes the # of #hashtags, "style"
+    // applies hashtagStyle to them, "" leaves them as they are.
+    hashtags: "",
+    hashtagStyle: "",
 
     removeEmptyParagraphs: true,
     removeImportedWordStyles: true,
@@ -210,7 +220,7 @@ function run() {
     var missing = [];
     var needed = [CONFIG.bodyStyle, CONFIG.leadStyle, CONFIG.manualHeadingStyle,
                   CONFIG.firstHeadingStyle, CONFIG.bulletStyle, CONFIG.numberedStyle,
-                  CONFIG.quoteStyle];
+                  CONFIG.quoteStyle, CONFIG.subtitleStyle];
     var i;
     for (i = 0; i < CONFIG.styleMap.length; i++) {
         needed.push(CONFIG.styleMap[i][1]);
@@ -221,7 +231,8 @@ function run() {
         }
     }
     var charPaths = [CONFIG.boldStyle, CONFIG.italicStyle, CONFIG.boldItalicStyle,
-                     CONFIG.superscriptStyle];
+                     CONFIG.superscriptStyle,
+                     CONFIG.hashtags === "style" ? CONFIG.hashtagStyle : ""];
     for (i = 0; i < charPaths.length; i++) {
         if (charPaths[i] && !findStyle(doc, charPaths[i], "character")) {
             missing.push("Character style: " + charPaths[i]);
@@ -253,7 +264,8 @@ function run() {
     view.rulerOrigin = RulerOrigin.PAGE_ORIGIN;
 
     var report = { mapped: {}, unmapped: {}, headings: 0, lists: 0, quotes: 0,
-                   emphasis: 0, removed: 0, pages: 0, wordStyles: 0 };
+                   emphasis: 0, removed: 0, pages: 0, wordStyles: 0,
+                   subtitle: false, hashtags: 0 };
 
     try {
         // Remember which styles existed before the import.
@@ -331,6 +343,7 @@ function run() {
 
         // Title and lead: the first detected heading and the first body paragraph.
         var titleDone = !CONFIG.firstHeadingStyle;
+        var titleIndex = -1;
         var leadDone = !CONFIG.leadStyle;
         for (p = 0; p < decisions.length; p++) {
             if (!decisions[p]) {
@@ -338,6 +351,7 @@ function run() {
             }
             if (!titleDone && decisions[p].kind === "heading") {
                 decisions[p].path = CONFIG.firstHeadingStyle;
+                titleIndex = p;
                 titleDone = true;
             } else if (!leadDone && decisions[p].body && trim(paras[p].contents) !== "") {
                 decisions[p].path = CONFIG.leadStyle;
@@ -350,6 +364,10 @@ function run() {
         paras = story.paragraphs.everyItem().getElements();
         for (p = 0; p < paras.length; p++) {
             if (decisions[p] && decisions[p].kind === "heading") {
+                continue;
+            }
+            // A lead typed entirely in bold is paragraph formatting, not emphasis.
+            if (decisions[p] && decisions[p].kind === "lead" && allBold(paras[p])) {
                 continue;
             }
             report.emphasis += emphasisToCharacterStyles(paras[p], charBold, charItalic,
@@ -372,6 +390,26 @@ function run() {
                 report.unmapped[d.word] = (report.unmapped[d.word] || 0) + 1;
             }
             report.mapped[d.path] = (report.mapped[d.path] || 0) + 1;
+        }
+
+        // 4b. Split "Title - Subtitle" typed in one paragraph.
+        if (titleIndex >= 0 && CONFIG.titleSeparator && CONFIG.subtitleStyle) {
+            var titlePara = story.paragraphs.everyItem().getElements()[titleIndex];
+            var titleText = String(titlePara.contents);
+            var cut = titleText.indexOf(CONFIG.titleSeparator);
+            if (cut > 0) {
+                titlePara.characters.itemByRange(cut, cut + CONFIG.titleSeparator.length - 1)
+                    .contents = "\r";
+                var subtitlePara = story.paragraphs.everyItem().getElements()[titleIndex + 1];
+                subtitlePara.applyParagraphStyle(findStyle(doc, CONFIG.subtitleStyle,
+                                                           "paragraph"), true);
+                report.subtitle = true;
+            }
+        }
+
+        // 4c. Hashtags.
+        if (CONFIG.hashtags === "remove" || CONFIG.hashtags === "style") {
+            report.hashtags = cleanHashtags(doc, story);
         }
 
         // 5. Remove empty paragraphs (back to front).
@@ -413,6 +451,24 @@ function run() {
     }
 
     showReport(report);
+}
+
+function cleanHashtags(doc, story) {
+    app.findGrepPreferences = NothingEnum.NOTHING;
+    app.changeGrepPreferences = NothingEnum.NOTHING;
+    var found;
+    if (CONFIG.hashtags === "remove") {
+        app.findGrepPreferences.findWhat = "#(?=\\w)";
+        app.changeGrepPreferences.changeTo = "";
+    } else {
+        app.findGrepPreferences.findWhat = "#\\w+";
+        app.changeGrepPreferences.appliedCharacterStyle =
+            findStyle(doc, CONFIG.hashtagStyle, "character");
+    }
+    found = story.changeGrep();
+    app.findGrepPreferences = NothingEnum.NOTHING;
+    app.changeGrepPreferences = NothingEnum.NOTHING;
+    return found.length;
 }
 
 function allBold(para) {
@@ -497,6 +553,13 @@ function showReport(report) {
     lines.push("Empty paragraphs removed: " + report.removed);
     lines.push("Word styles removed: " + report.wordStyles);
     lines.push("Pages added: " + report.pages);
+    if (CONFIG.titleSeparator) {
+        lines.push("Title split into title + subtitle: " + (report.subtitle ? "yes" : "no"));
+    }
+    if (CONFIG.hashtags) {
+        lines.push("Hashtags " + (CONFIG.hashtags === "remove" ? "cleaned" : "styled") +
+                   ": " + report.hashtags);
+    }
     var unmapped = [];
     for (key in report.unmapped) {
         if (report.unmapped.hasOwnProperty(key)) {

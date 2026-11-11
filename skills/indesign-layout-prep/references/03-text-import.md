@@ -72,10 +72,17 @@ What it does, in order (all undoable in one step):
    frame) until there is no overset text.
 7. Shows a report: paragraphs per style, detections, Word styles not mapped.
 
-Things the script does not decide, so flag them to the user: a title and
-subtitle typed in one paragraph ("Title - Subtitle"), social-media leftovers
-(#hashtags, @mentions, "link in the comments"), and a fully bold paragraph
-that is a lead rather than a heading.
+Options for common Word problems (ask the user before turning them on,
+since they change the text):
+- `titleSeparator` + `subtitleStyle`: a title and subtitle typed in one
+  paragraph ("Title - Subtitle") become two paragraphs.
+- `hashtags: "remove"` deletes the `#` of #hashtags; `"style"` applies
+  `hashtagStyle` to them instead.
+- A lead typed entirely in bold gets `leadStyle` without the bold (it is
+  paragraph formatting, not emphasis).
+
+Flag what no option covers, e.g. social-media phrases ("link in the
+comments") or other text that needs editing for print.
 
 If the user's prompt asks for something different (e.g. "place it from
 page 3", "one column on the first page", "keep Word tables as they are"),
