@@ -15,7 +15,8 @@ Usage:
 style, so you can review the whole type system at a glance.
 
 Only the Python 3 standard library is used. See ../assets/style-system.schema.json
-for the input format and ../assets/style-system.example.json for an example.
+for the input format. The style system is always extracted from the user's own
+reference (step 1) or from their IDML (extract_idml.py); none is bundled.
 """
 
 import argparse
@@ -160,7 +161,12 @@ def load_document_settings(data):
     if columns < 1:
         raise StyleSystemError("columns must be 1 or more")
 
+    frame_columns = int(doc.get("text_frame_columns", columns))
+    if frame_columns < 1:
+        raise StyleSystemError("text_frame_columns must be 1 or more")
+
     return {
+        "frame_columns": frame_columns,
         "width": mm(width_mm),
         "height": mm(height_mm),
         "facing": bool(doc.get("facing_pages", False)),
@@ -538,7 +544,7 @@ def spread_xml(s):
             '    </TextFrame>\n  </Spread>\n</idPkg:Spread>\n'
             % (PKG_NS, DOM_VERSION,
                page_xml("uPage1", "1", s, "1 0 0 1 0 0", master="uMaster"),
-               points, s["columns"], num(s["gutter"])))
+               points, s["frame_columns"], num(s["gutter"])))
 
 
 def story_xml(paragraph_styles, default_self, specimen):

@@ -18,23 +18,25 @@
 
 // ---------------------------------------------------------------------------
 // CONFIG - all positions and sizes in millimetres, from the page's top-left.
+// Claude fills it from the document's content and its style-system.json.
+// Non-ASCII text (accents, symbols) must use \uXXXX escapes.
 // ---------------------------------------------------------------------------
 var CONFIG = {
-    name: "Key figure - 68% adoption",
+    name: "",                  // layer-panel name of the group
     origin: [20, 20],          // [x, y] of the top-left corner
     width: 80,
     padding: 6,
 
-    figure: "68%",
-    label: "of teams already use AI in their daily workflow",
-    source: "Source: Northwind Survey 2026",
+    figure: "",                // e.g. the number to highlight
+    label: "",                 // what the number means
+    source: "",                // optional source line
 
-    // Swatch names and style paths ("Group:Style") from your template.
-    backgroundSwatch: "Northwind Sand",
-    accentSwatch: "Northwind Teal",
-    figureStyle: "Callouts:Key Figure",
-    labelStyle: "Callouts:Box Text",
-    sourceStyle: "Captions & Notes:Source"
+    // Swatch names and style paths ("Group:Style") from the template.
+    backgroundSwatch: "",
+    accentSwatch: "",
+    figureStyle: "",
+    labelStyle: "",
+    sourceStyle: ""
 };
 
 // ---------------------------------------------------------------------------
@@ -134,11 +136,14 @@ function build(doc, page) {
     var inner = c.width - 2 * c.padding;
     var items = [];
 
-    var textFrame = textBox(page, [x + c.padding + 2, y + c.padding, inner - 2, 60], [
+    var lines = [
         [c.figure, findStyle(doc, c.figureStyle, "paragraph")],
-        [c.label, findStyle(doc, c.labelStyle, "paragraph")],
-        [c.source, findStyle(doc, c.sourceStyle, "paragraph")]
-    ]);
+        [c.label, findStyle(doc, c.labelStyle, "paragraph")]
+    ];
+    if (c.source) {
+        lines.push([c.source, findStyle(doc, c.sourceStyle, "paragraph")]);
+    }
+    var textFrame = textBox(page, [x + c.padding + 2, y + c.padding, inner - 2, 60], lines);
     // Shrink the frame to its text, then size the background to match.
     textFrame.fit(FitOptions.FRAME_TO_CONTENT);
     var tb = textFrame.geometricBounds; // [top, left, bottom, right]
@@ -162,8 +167,16 @@ function run() {
     var doc = app.activeDocument;
     var page = (app.layoutWindows.length > 0) ? app.activeWindow.activePage : doc.pages[0];
 
+    if (!CONFIG.figure || !CONFIG.figureStyle || !CONFIG.backgroundSwatch) {
+        alert("CONFIG is empty. Fill it with the content, swatches and styles " +
+              "of your template (Claude does this) and run again.");
+        return;
+    }
     var missing = [];
-    var styles = [CONFIG.figureStyle, CONFIG.labelStyle, CONFIG.sourceStyle];
+    var styles = [CONFIG.figureStyle, CONFIG.labelStyle];
+    if (CONFIG.source) {
+        styles.push(CONFIG.sourceStyle);
+    }
     var swatches = [CONFIG.backgroundSwatch, CONFIG.accentSwatch];
     var i;
     for (i = 0; i < styles.length; i++) {

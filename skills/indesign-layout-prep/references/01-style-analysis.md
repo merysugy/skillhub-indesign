@@ -27,8 +27,8 @@ From the PDF (or InDesign export):
    subset prefix (`ABCDEF+MinionPro-Regular`): report the family as InDesign
    shows it (`Minion Pro`, style `Regular`).
 3. **Colour**: brand colours with CMYK (print) or RGB/hex (screen). Name them
-   as the brand does ("Northwind Navy"), not "Blue 1". Values sampled from a
-   PDF render are estimates unless the PDF states them.
+   as the brand does (its own colour names), not "Blue 1". Values sampled
+   from a PDF render are estimates unless the PDF states them.
 4. **Repeated resources**: callout boxes, key figures, pull quotes, captions,
    sources, tables, icons, rules. Each becomes a style (or a set of styles)
    and is noted for step 4.
@@ -37,6 +37,26 @@ From the Word document: which roles the content actually needs (how many
 heading levels, lists, quotes, tables, footnotes, captions). Do not add styles
 the content will never use; do flag roles the content needs but the
 reference lacks, and propose a style in the same identity.
+
+## PDFs exported from design tools
+
+Figma, Canva and similar tools often export text as **Type3 fonts**: the
+text is extractable and the sizes are real, but font names are gone and the
+text colour may read as black. Then:
+
+- **Scale**: if the page is not in points at real size (Figma exports A4 as
+  1249 x 1769 "pt", i.e. pixels), convert: `real_pt = size * 595.28 / page_width`.
+- **Fonts**: identify them visually from zoomed renders (letter shapes:
+  `a`, `g`, `Q`, `R`, italics) and mark them **estimated**.
+- **Colours**: sample the darkest pixel inside each text box of a render;
+  read fills of vector shapes for the palette. Boxes may be a colour at
+  reduced opacity: report the colour as rendered.
+- **Leading and spacing**: from baseline-to-baseline distances between
+  lines of the same style and between consecutive styles.
+
+`pymupdf` (pip) does all of this: `page.get_text("dict")` for spans with
+size and position, `page.get_drawings()` for fills, `page.get_pixmap()` for
+renders and pixel sampling.
 
 ## Hierarchy
 
@@ -55,22 +75,24 @@ reference lacks, and propose a style in the same identity.
 One table for paragraph styles, one for character styles, one for colours.
 Mark estimated values with `~` and an "Estimated" column.
 
-| Group | Style | Based on | Font / weight | Size / leading (pt) | Before / after (pt) | Colour | Align | Notes | Estimated |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Headings | Headline | - | Myriad Pro Bold | 30 / 34 | 0 / 14 | Northwind Navy | Left | Spans columns | - |
-| Headings | Subhead | Headline | (inherits) | 18 / 22 | 18 / 8 | (inherits) | Left | | - |
-| Body | Body | - | Minion Pro Regular | 10 / 14 | 0 / 0 | Text Grey | Justified | 10 pt first-line indent | ~leading |
+Paragraph styles, in hierarchy order, with these columns:
 
-| Colour | CMYK | RGB / hex | Use | Estimated |
-| --- | --- | --- | --- | --- |
-| Northwind Navy | 100 80 20 30 | | Headings | - |
+`Group | Style | Based on | Font / weight | Size / leading (pt) | Before / after (pt) | Colour | Align | Notes | Estimated`
+
+Children only fill in what changes ("(inherits)" elsewhere). Character
+styles use the same columns without spacing and alignment. Colours:
+
+`Colour | CMYK | RGB / hex | Use | Estimated`
+
+Name styles in the user's language and the brand's vocabulary.
 
 Then list the grid: `A4, margins 20 mm, 2 columns, 6 mm gutter, 3 mm bleed`.
 
 ## The JSON
 
-Write `style-system.json` following `../assets/style-system.schema.json`.
-Copy the structure of `../assets/style-system.example.json`. Notes:
+Write `style-system.json` following `../assets/style-system.schema.json`,
+using only what this reference shows (no styles, fonts or colours from other
+projects). Notes:
 
 - Sizes in points, geometry in millimetres.
 - `group` is the folder; `based_on` and `next_style` use style **names**.

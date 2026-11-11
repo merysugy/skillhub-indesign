@@ -1,6 +1,6 @@
 ---
 name: indesign-layout-prep
-description: Prepares documents for professional layout in Adobe InDesign instead of laying them out with AI. Extracts the design system (paragraph/character styles, colours, grid) from a reference PDF or InDesign file, generates an IDML template with grouped styles and brand swatches, writes ExtendScript (ES3) scripts that import a Word .docx with the template styles applied, and proposes visual resources (key figures, diagrams, mind maps) section by section as InDesign scripts. Use when the user mentions InDesign, IDML, .indd/.indt, ExtendScript or .jsx for InDesign, maquetar/maquetación, a whitepaper, report, magazine or brochure to lay out, a style sheet or "sistema de estilos" from a PDF, or importing a Word document into InDesign.
+description: Prepares documents for professional layout in Adobe InDesign instead of laying them out with AI. Extracts the design system (paragraph/character styles, colours, grid) from the user's reference PDF, or reads it from their existing InDesign file exported as IDML, generates an IDML template with grouped styles and brand swatches, writes ExtendScript (ES3) scripts that import a Word .docx with the template styles applied, and proposes visual resources (key figures, diagrams, mind maps) section by section as InDesign scripts. Use when the user mentions InDesign, IDML, .indd/.indt, ExtendScript or .jsx for InDesign, maquetar/maquetación, a whitepaper, report, magazine or brochure to lay out, a style sheet or "sistema de estilos" from a PDF, or importing a Word document into InDesign.
 ---
 
 # InDesign layout prep
@@ -28,13 +28,21 @@ names the user and the brand already use.
 
 Ask for what is missing, one message, no more than needed:
 
-1. **Design reference**: a PDF whose style should be replicated, or an
-   existing InDesign file (export a PDF of it, or share the .idml).
-2. **Content**: the Word document (.docx) or text to lay out.
-3. **Format** (if not obvious): page size, margins, columns, facing pages,
-   print or screen.
+1. **Content**: the Word document (.docx) or text to lay out.
+2. **Where the design comes from** - ask which case applies:
+   - **A. A reference to replicate**: a PDF (or a PDF export of a design in
+     Figma, InDesign, Canva...). Go through steps 1 and 2.
+   - **B. Styles that already exist in InDesign** (a template or a previous
+     document): ask for it as **IDML** (File > Save As > InDesign Markup
+     (IDML)). Read `references/existing-idml.md`, extract the style system
+     with `scripts/extract_idml.py`, and continue at step 3 using their file
+     as the template.
+3. **Format** (case A, if not obvious): page size, margins, columns, facing
+   pages, print or screen.
 
-If the user already has a template (.indt/.idml with styles), skip to step 3.
+No style system is bundled with this skill: every project's styles come from
+its own reference (case A) or its own IDML (case B). Never reuse styles,
+colours or fonts from another project.
 
 ## The five steps
 
@@ -49,8 +57,8 @@ Read `references/01-style-analysis.md` and follow it. Deliver:
   in hierarchy order; plus repeated resources (callouts, quotes, captions,
   tables) and the colour palette.
 - Anything not measurable with confidence is marked **estimated**.
-- A `style-system.json` file following `assets/style-system.schema.json`
-  (see `assets/style-system.example.json`).
+- A `style-system.json` file following `assets/style-system.schema.json`,
+  built only from what this reference shows.
 
 **Checkpoint:** do not generate the template until the user validates or
 corrects the table. Apply their corrections to the JSON.
@@ -81,7 +89,8 @@ python3 scripts/inspect_docx.py content.docx --style-system style-system.json
   how to map styles in InDesign's import options.
 - **Hand-made Word** (bold lines as headings, typed dashes, manual indents):
   copy `assets/import_docx.jsx`, fill its `CONFIG` (style map from the
-  inspector output, style paths as `Group:Style`), and deliver it.
+  inspector output, style paths as `Group:Style`, non-ASCII characters as
+  `\uXXXX` escapes), and deliver it.
 
 Before delivering any `.jsx`, read `references/extendscript-rules.md` and run
 `python3 scripts/check_es3.py <file>.jsx`. Fix every error.
@@ -114,11 +123,12 @@ a TOC) but do not try to finish the layout.
 | `references/03-text-import.md` | Word import: both cases, configuring `import_docx.jsx`, installing scripts |
 | `references/04-visual-resources.md` | Resource proposal format and turning resources into scripts |
 | `references/extendscript-rules.md` | ES3 rules and InDesign scripting pitfalls |
+| `references/existing-idml.md` | Case B: the user already has styles in InDesign |
 | `scripts/build_idml.py` | style-system JSON to `.idml` template |
+| `scripts/extract_idml.py` | Existing `.idml` to style-system JSON (case B) |
 | `scripts/inspect_docx.py` | Word structure report + ready-made style map |
 | `scripts/check_es3.py` | Catches modern JavaScript in `.jsx` files |
 | `assets/style-system.schema.json` | Format of the style system |
-| `assets/style-system.example.json` | Complete example (fictional brand) |
 | `assets/import_docx.jsx` | Step 3 import script template |
 | `assets/visual_resource.jsx` | Step 4 resource script template with drawing helpers |
 

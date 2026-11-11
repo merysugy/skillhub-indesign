@@ -2,8 +2,8 @@
 
 **Claude doesn't lay out the document. It prepares it so you can lay it out in InDesign.**
 
-A Claude skill (and Claude Code plugin) for editorial designers. It takes a
-reference design and a Word document. Before you start designing, you get:
+A Claude skill (and Claude Code plugin) for editorial designers. It takes your
+own design reference and a Word document. Before you start designing, you get:
 
 - the **style system** taken from the reference (paragraph and character styles, colours, grid),
 - an **InDesign template (.idml)** with every style in its group and every brand colour in the swatches panel,
@@ -60,6 +60,17 @@ for each document by its use, its goal and how it gets made.
 This workflow works when you're duplicating an existing InDesign document and
 when you're starting a clean one from scratch.
 
+### Two starting points
+
+- **A. You have a reference to replicate**: a PDF (from InDesign, Figma, Canva...).
+  Claude measures it and builds the style system and the template (steps 1-2).
+- **B. Your styles already live in InDesign**: export your template or a
+  previous document as IDML (File > Save As > InDesign Markup). Claude reads
+  your styles from it and goes straight to importing the text (step 3).
+
+The skill ships no default styles. Every style system comes from your own
+reference or your own IDML.
+
 ---
 
 ## The workflow
@@ -78,6 +89,7 @@ Claude does the mechanical part of each step. The final design is yours.
 
 | Step | You give | You get |
 | --- | --- | --- |
+| 0. (Case B) Your styles | Your template as IDML | `style-system.json` read from it → go to step 3 |
 | 1. Identity and styles | Reference PDF + Word | Style table (estimated values flagged) + `style-system.json` |
 | 2. IDML template | Validated table, format (e.g. A4, 20 mm, 2 columns) | `template.idml` + `specimen.idml` → save as `.indt` |
 | 3. Text import | Word document | Import mapping (well-styled Word) or `import_docx.jsx` (hand-made Word) |
@@ -169,14 +181,13 @@ skills/indesign-layout-prep/
 ├── references/                   # One guide per step + ExtendScript rules
 ├── scripts/
 │   ├── build_idml.py             # style-system JSON → .idml template
+│   ├── extract_idml.py           # your existing .idml → style-system JSON
 │   ├── inspect_docx.py           # Word structure report + style map for the import script
 │   └── check_es3.py              # Catches modern JavaScript before InDesign does
 └── assets/
     ├── style-system.schema.json  # Format of the style system
-    ├── style-system.example.json # Full example (fictional brand)
     ├── import_docx.jsx           # Step 3 import script template
     └── visual_resource.jsx       # Step 4 resource script template + drawing helpers
-examples/                         # Generated template, specimen and a sample Word file
 .claude-plugin/                   # Claude Code plugin + marketplace manifests
 tools/package_skill.sh            # Builds the zip for claude.ai
 ```
@@ -184,13 +195,11 @@ tools/package_skill.sh            # Builds the zip for claude.ai
 You can also use the tools without Claude:
 
 ```bash
+python3 skills/indesign-layout-prep/scripts/extract_idml.py my-template.idml -o my-styles.json
 python3 skills/indesign-layout-prep/scripts/build_idml.py my-styles.json -o my-template.idml --specimen
 python3 skills/indesign-layout-prep/scripts/inspect_docx.py content.docx --style-system my-styles.json
 python3 skills/indesign-layout-prep/scripts/check_es3.py my-script.jsx
 ```
-
-Try it: open `examples/northwind-template.idml` in InDesign, run
-`import_docx.jsx` and choose `examples/sample-content.docx`.
 
 ---
 

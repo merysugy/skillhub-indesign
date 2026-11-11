@@ -19,6 +19,7 @@ otherwise, Claude tends to write modern JavaScript: these rules prevent it.
 | `class`, destructuring, spread, default params, `for...of` | constructor functions, explicit code |
 | `Map`, `Set`, `Promise`, `async/await` | plain objects, synchronous code |
 | trailing commas `[1, 2,]` | none |
+| accented letters or symbols in code/strings (`"Título"`) | `\uXXXX` escapes (`"T\u00EDtulo"`) |
 
 Always run `python3 scripts/check_es3.py file.jsx` before delivering.
 

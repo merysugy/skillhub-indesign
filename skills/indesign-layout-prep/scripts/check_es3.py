@@ -118,6 +118,15 @@ def check_file(path):
         for pattern, message in WARNINGS:
             if re.search(pattern, text):
                 warnings.append((number, message))
+    # ExtendScript may read files without a BOM in the system encoding, so
+    # accented letters and symbols in code break. Use \uXXXX escapes.
+    for number, text in enumerate(source.split("\n"), start=1):
+        stripped = text.strip()
+        if stripped.startswith("//") or stripped.startswith("*"):
+            continue
+        if re.search(r"[^\x00-\x7F]", text):
+            warnings.append((number, "non-ASCII character in code or string: "
+                                     "use a \\uXXXX escape (e.g. \\u00ED for i-acute)"))
     # Trailing commas can span lines.
     for match in re.finditer(r",\s*\n\s*[\]}]", code):
         number = code.count("\n", 0, match.start()) + 1

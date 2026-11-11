@@ -10,9 +10,11 @@ __pycache__/
 # Build output
 dist/
 
-# Generated InDesign files (keep the committed example)
+# Generated InDesign files
 *.idml
-!examples/*.idml
 *.indd
 *.indt
 *.idlk
+
+# Client work (keep brand files out of the public repo)
+work/

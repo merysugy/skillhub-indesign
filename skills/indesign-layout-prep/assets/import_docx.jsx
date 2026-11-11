@@ -6,9 +6,10 @@
 //   1. Asks for the .docx and places it on page 1 (in the first empty text
 //      frame, or in a new frame at the page margins).
 //   2. Maps Word paragraph styles to template styles (STYLE_MAP below).
-//   3. Detects hand-made structure: short all-bold paragraphs become headings,
-//      "- " / "1. " paragraphs become list items, manually indented
-//      paragraphs become quotes.
+//   3. Detects structure: real Word lists and typed "- " / "1. " paragraphs
+//      become list items, short all-bold paragraphs become headings (the
+//      first one can be the title), the first body paragraph can be the
+//      lead, and manually indented paragraphs become quotes.
 //   4. Turns local bold / italic / superscript into character styles BEFORE
 //      clearing overrides, so emphasis survives.
 //   5. Removes empty paragraphs and the Word styles that came with the file.
@@ -24,53 +25,43 @@
 #target indesign
 
 // ---------------------------------------------------------------------------
-// CONFIG - edit this block. Style paths use "Group:Style" (or just "Style"
-// when the style is not inside a group).
+// CONFIG - filled for each project from its style system (style-system.json)
+// and from inspect_docx.py. Style paths use "Group:Style" exactly as in the
+// template (or just "Style" when it is not inside a group). Leave a style ""
+// to switch that feature off.
 // ---------------------------------------------------------------------------
 var CONFIG = {
     // Word style name -> template paragraph style. Matching ignores case.
+    // Example row: ["Heading 1", "Headings:Title 1"]
     styleMap: [
-        ["Title", "Headings:Headline"],
-        ["Heading 1", "Headings:Headline"],
-        ["Título 1", "Headings:Headline"],
-        ["Heading 2", "Headings:Subhead"],
-        ["Título 2", "Headings:Subhead"],
-        ["Heading 3", "Headings:Section Label"],
-        ["Título 3", "Headings:Section Label"],
-        ["Normal", "Body:Body"],
-        ["Body Text", "Body:Body"],
-        ["List Bullet", "Body:Bullet"],
-        ["List Paragraph", "Body:Bullet"],
-        ["List Number", "Body:Numbered"],
-        ["Quote", "Callouts:Pull Quote"],
-        ["Cita", "Callouts:Pull Quote"],
-        ["Caption", "Captions & Notes:Caption"]
     ],
 
-    // Used for any Word style that is not in styleMap.
-    bodyStyle: "Body:Body",
+    // Used for any Word style that is not in styleMap. Required.
+    bodyStyle: "",
+
+    // Optional: style for the first body paragraph (lead / standfirst).
+    leadStyle: "",
 
     // Hand-made headings: short paragraphs where every character is bold.
-    detectManualHeadings: true,
-    manualHeadingStyle: "Headings:Subhead",
-    manualHeadingMaxChars: 90,
+    // The first one becomes firstHeadingStyle (the title) when it is set.
+    manualHeadingStyle: "",
+    firstHeadingStyle: "",
+    manualHeadingMaxChars: 120,
 
-    // Hand-made lists: paragraphs that start with a dash/bullet or "1." / "1)".
-    detectManualLists: true,
-    bulletStyle: "Body:Bullet",
-    numberedStyle: "Body:Numbered",
+    // Lists: real Word lists, and typed "- " / "1. " paragraphs.
+    bulletStyle: "",
+    numberedStyle: "",
     removeListMarkers: true,
 
     // Hand-made quotes: body paragraphs indented by at least this many points.
-    detectManualQuotes: true,
-    quoteStyle: "Callouts:Pull Quote",
+    quoteStyle: "",
     quoteMinIndentPt: 18,
 
-    // Character styles for emphasis kept from Word. Leave "" to skip one.
-    boldStyle: "Text:Bold",
-    italicStyle: "Text:Italic",
-    boldItalicStyle: "Text:Bold Italic",
-    superscriptStyle: "Text:Superscript",
+    // Character styles for emphasis kept from Word.
+    boldStyle: "",
+    italicStyle: "",
+    boldItalicStyle: "",
+    superscriptStyle: "",
 
     removeEmptyParagraphs: true,
     removeImportedWordStyles: true,
@@ -168,8 +159,8 @@ function setWordImportPreferences() {
     try { p.resolveCharacterStyleClash = ResolveStyleClash.RESOLVE_CLASH_USE_EXISTING; } catch (e4) {}
 }
 
-// Frame covering the page margins, with the page's columns.
-function frameAtMargins(page) {
+// Frame covering the page margins, with the given columns.
+function frameAtMargins(page, columns, gutter) {
     var b = page.bounds; // [top, left, bottom, right]
     var mp = page.marginPreferences;
     var leftMargin = mp.left;
@@ -182,8 +173,8 @@ function frameAtMargins(page) {
     var frame = page.textFrames.add({
         geometricBounds: [b[0] + mp.top, b[1] + leftMargin, b[2] - mp.bottom, b[3] - rightMargin]
     });
-    frame.textFramePreferences.textColumnCount = mp.columnCount;
-    frame.textFramePreferences.textColumnGutter = mp.columnGutter;
+    frame.textFramePreferences.textColumnCount = columns;
+    frame.textFramePreferences.textColumnGutter = gutter;
     return frame;
 }
 
@@ -209,10 +200,17 @@ function run() {
     }
     var doc = app.activeDocument;
 
+    if (!CONFIG.bodyStyle) {
+        alert("CONFIG is empty. Fill it with your template's style names " +
+              "(Claude does this from style-system.json) and run again.");
+        return;
+    }
+
     // Check every style named in CONFIG before touching the document.
     var missing = [];
-    var needed = [CONFIG.bodyStyle, CONFIG.manualHeadingStyle, CONFIG.bulletStyle,
-                  CONFIG.numberedStyle, CONFIG.quoteStyle];
+    var needed = [CONFIG.bodyStyle, CONFIG.leadStyle, CONFIG.manualHeadingStyle,
+                  CONFIG.firstHeadingStyle, CONFIG.bulletStyle, CONFIG.numberedStyle,
+                  CONFIG.quoteStyle];
     var i;
     for (i = 0; i < CONFIG.styleMap.length; i++) {
         needed.push(CONFIG.styleMap[i][1]);
@@ -265,7 +263,13 @@ function run() {
         // 1. Place the file.
         setWordImportPreferences();
         var page = doc.pages[0];
-        var frame = firstEmptyFrame(page) || frameAtMargins(page);
+        var frame = firstEmptyFrame(page) ||
+                    frameAtMargins(page, page.marginPreferences.columnCount,
+                                   page.marginPreferences.columnGutter);
+        // New frames copy the columns of the first one (the template's frame
+        // may use fewer columns than the page grid).
+        var frameColumns = frame.textFramePreferences.textColumnCount;
+        var frameGutter = frame.textFramePreferences.textColumnGutter;
         frame.place(file, false);
         var story = frame.parentStory;
 
@@ -286,11 +290,23 @@ function run() {
             }
             var isBodyLike = (path === CONFIG.bodyStyle);
 
-            if (isBodyLike && CONFIG.detectManualLists) {
-                var bullet = text.match(/^\s*[\-–—•●\*]\s+/);
+            // Real Word lists arrive as InDesign bullets/numbers (local
+            // formatting that clearing overrides would remove).
+            var listType = para.bulletsAndNumberingListType;
+            if (isBodyLike && listType === ListType.BULLET_LIST && CONFIG.bulletStyle) {
+                path = CONFIG.bulletStyle;
+                kind = "list";
+            } else if (isBodyLike && listType === ListType.NUMBERED_LIST && CONFIG.numberedStyle) {
+                path = CONFIG.numberedStyle;
+                kind = "list";
+            }
+            // Typed lists: "- item", "\u2022 item", "1. item", "1) item".
+            if (kind !== "list" && isBodyLike) {
+                var bullet = text.match(/^\s*[\-\u2013\u2014\u2022\u25CF\*]\s+/);
                 var number = text.match(/^\s*\d{1,3}[\.\)]\s+/);
-                if (bullet || number) {
-                    path = bullet ? CONFIG.bulletStyle : CONFIG.numberedStyle;
+                var listStyle = bullet ? CONFIG.bulletStyle : (number ? CONFIG.numberedStyle : "");
+                if (listStyle) {
+                    path = listStyle;
                     kind = "list";
                     if (CONFIG.removeListMarkers) {
                         var markerLength = (bullet || number)[0].length;
@@ -298,18 +314,36 @@ function run() {
                     }
                 }
             }
-            if (kind !== "list" && isBodyLike && CONFIG.detectManualHeadings &&
+            if (kind !== "list" && isBodyLike && CONFIG.manualHeadingStyle &&
                 text.length > 0 && text.length <= CONFIG.manualHeadingMaxChars &&
                 !/[\.:;,]$/.test(trim(text)) && allBold(para)) {
                 path = CONFIG.manualHeadingStyle;
                 kind = "heading";
             }
-            if (kind !== "list" && kind !== "heading" && isBodyLike &&
-                CONFIG.detectManualQuotes && para.leftIndent >= CONFIG.quoteMinIndentPt) {
+            if (kind !== "list" && kind !== "heading" && isBodyLike && CONFIG.quoteStyle &&
+                para.leftIndent >= CONFIG.quoteMinIndentPt) {
                 path = CONFIG.quoteStyle;
                 kind = "quote";
             }
-            decisions[p] = { path: path, kind: kind, word: wordName };
+            decisions[p] = { path: path, kind: kind, word: wordName,
+                             body: (kind === "mapped" || kind === "fallback") && isBodyLike };
+        }
+
+        // Title and lead: the first detected heading and the first body paragraph.
+        var titleDone = !CONFIG.firstHeadingStyle;
+        var leadDone = !CONFIG.leadStyle;
+        for (p = 0; p < decisions.length; p++) {
+            if (!decisions[p]) {
+                continue;
+            }
+            if (!titleDone && decisions[p].kind === "heading") {
+                decisions[p].path = CONFIG.firstHeadingStyle;
+                titleDone = true;
+            } else if (!leadDone && decisions[p].body && trim(paras[p].contents) !== "") {
+                decisions[p].path = CONFIG.leadStyle;
+                decisions[p].kind = "lead";
+                leadDone = true;
+            }
         }
 
         // 3. Emphasis -> character styles (skipped on detected headings).
@@ -366,7 +400,7 @@ function run() {
         story.recompose();
         while (frame.overflows && report.pages < CONFIG.maxNewPages) {
             var newPage = doc.pages.add(LocationOptions.AT_END);
-            var next = frameAtMargins(newPage);
+            var next = frameAtMargins(newPage, frameColumns, frameGutter);
             frame.nextTextFrame = next;
             frame = next;
             report.pages++;

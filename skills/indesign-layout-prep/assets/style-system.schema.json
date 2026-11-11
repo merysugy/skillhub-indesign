@@ -42,7 +42,8 @@
             }
           ]
         },
-        "columns": { "type": "integer", "minimum": 1, "default": 1 },
+        "columns": { "type": "integer", "minimum": 1, "default": 1, "description": "Columns of the page grid (margin guides)." },
+        "text_frame_columns": { "type": "integer", "minimum": 1, "description": "Columns of the text frame on page 1 when they differ from the grid, e.g. a 4-column grid with 1-column running text. Defaults to columns." },
         "gutter_mm": { "type": "number", "default": 5 },
         "bleed_mm": { "type": "number", "default": 3 },
         "units": { "enum": ["mm", "cm", "pt", "pica", "in"], "default": "mm" },
