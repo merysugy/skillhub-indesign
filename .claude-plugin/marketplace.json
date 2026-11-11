@@ -1,0 +1,19 @@
+{
+  "name": "skillhub-indesign",
+  "owner": {
+    "name": "Maria Sugasaga",
+    "url": "https://github.com/merysugy"
+  },
+  "metadata": {
+    "description": "Claude + InDesign workflow for professional editorial layout."
+  },
+  "plugins": [
+    {
+      "name": "indesign-layout-prep",
+      "source": "./",
+      "description": "Extract a style system from a reference PDF, generate an IDML template, import Word text with styles applied, and propose visual resources as InDesign scripts.",
+      "version": "1.0.0",
+      "category": "design"
+    }
+  ]
+}

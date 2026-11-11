@@ -1,0 +1,13 @@
+{
+  "name": "indesign-layout-prep",
+  "version": "1.0.0",
+  "description": "Claude prepares, the designer lays out: extract a style system from a reference PDF, generate an InDesign IDML template, import Word text with styles applied via ExtendScript, and propose visual resources as editable InDesign scripts.",
+  "author": {
+    "name": "Maria Sugasaga",
+    "url": "https://github.com/merysugy"
+  },
+  "homepage": "https://github.com/merysugy/skillhub-indesign",
+  "repository": "https://github.com/merysugy/skillhub-indesign",
+  "license": "MIT",
+  "keywords": ["indesign", "idml", "extendscript", "layout", "editorial-design", "typography", "word", "docx"]
+}

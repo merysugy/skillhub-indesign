@@ -1,0 +1,105 @@
+{
+  "name": "Northwind Whitepaper",
+  "source": "Reference PDF: northwind-report-2026.pdf (example data, not a real brand)",
+  "document": {
+    "page_size": "A4",
+    "orientation": "portrait",
+    "facing_pages": false,
+    "margins_mm": { "top": 20, "bottom": 20, "inside": 20, "outside": 20 },
+    "columns": 2,
+    "gutter_mm": 6,
+    "bleed_mm": 3,
+    "units": "mm",
+    "default_paragraph_style": "Body"
+  },
+  "colors": [
+    { "name": "Northwind Navy", "cmyk": [100, 80, 20, 30], "role": "Headings, rules" },
+    { "name": "Northwind Teal", "cmyk": [75, 0, 40, 0], "role": "Accents, key figures" },
+    { "name": "Northwind Sand", "cmyk": [0, 8, 20, 4], "role": "Box backgrounds", "estimated": true },
+    { "name": "Text Grey", "cmyk": [0, 0, 0, 85], "role": "Body text" }
+  ],
+  "paragraph_styles": [
+    {
+      "name": "Headline", "group": "Headings",
+      "font": "Myriad Pro", "font_style": "Bold", "size_pt": 30, "leading_pt": 34,
+      "space_before_pt": 0, "space_after_pt": 14, "color": "Northwind Navy",
+      "align": "left", "hyphenate": false, "keep_with_next": 2, "span_columns": true,
+      "next_style": "Body First", "maps_from": ["Heading 1", "Título 1", "Title"]
+    },
+    {
+      "name": "Subhead", "group": "Headings", "based_on": "Headline",
+      "size_pt": 18, "leading_pt": 22, "space_before_pt": 18, "space_after_pt": 8,
+      "span_columns": false, "next_style": "Body First",
+      "maps_from": ["Heading 2", "Título 2"]
+    },
+    {
+      "name": "Section Label", "group": "Headings", "based_on": "Subhead",
+      "font_style": "Semibold", "size_pt": 9, "leading_pt": 12, "tracking": 100,
+      "case": "uppercase", "color": "Northwind Teal", "space_before_pt": 12, "space_after_pt": 4,
+      "maps_from": ["Heading 3", "Título 3"], "estimated": ["tracking"]
+    },
+    {
+      "name": "Body", "group": "Body",
+      "font": "Minion Pro", "font_style": "Regular", "size_pt": 10, "leading_pt": 14,
+      "space_before_pt": 0, "space_after_pt": 0, "first_line_indent_pt": 10,
+      "color": "Text Grey", "align": "justify", "hyphenate": true,
+      "maps_from": ["Normal", "Body Text", "Texto independiente"]
+    },
+    {
+      "name": "Body First", "group": "Body", "based_on": "Body",
+      "first_line_indent_pt": 0, "next_style": "Body"
+    },
+    {
+      "name": "Bullet", "group": "Body", "based_on": "Body",
+      "first_line_indent_pt": -8, "left_indent_pt": 12, "space_after_pt": 3,
+      "align": "left", "list": "bullet", "maps_from": ["List Bullet", "Lista con viñetas"]
+    },
+    {
+      "name": "Numbered", "group": "Body", "based_on": "Bullet",
+      "list": "numbered", "maps_from": ["List Number", "Lista con números"]
+    },
+    {
+      "name": "Pull Quote", "group": "Callouts",
+      "font": "Minion Pro", "font_style": "Italic", "size_pt": 16, "leading_pt": 21,
+      "space_before_pt": 12, "space_after_pt": 12, "color": "Northwind Navy",
+      "align": "left", "hyphenate": false, "maps_from": ["Quote", "Cita"]
+    },
+    {
+      "name": "Key Figure", "group": "Callouts",
+      "font": "Myriad Pro", "font_style": "Bold", "size_pt": 40, "leading_pt": 40,
+      "color": "Northwind Teal", "align": "left", "hyphenate": false, "space_after_pt": 2
+    },
+    {
+      "name": "Box Text", "group": "Callouts", "based_on": "Body",
+      "font": "Myriad Pro", "size_pt": 9, "leading_pt": 13, "first_line_indent_pt": 0,
+      "align": "left", "space_after_pt": 4
+    },
+    {
+      "name": "Caption", "group": "Captions & Notes",
+      "font": "Myriad Pro", "font_style": "Italic", "size_pt": 8, "leading_pt": 11,
+      "space_before_pt": 4, "space_after_pt": 8, "color": "Text Grey", "align": "left",
+      "hyphenate": false, "maps_from": ["Caption", "Descripción"]
+    },
+    {
+      "name": "Source", "group": "Captions & Notes", "based_on": "Caption",
+      "font_style": "Regular", "size_pt": 7, "leading_pt": 9
+    },
+    {
+      "name": "Table Header", "group": "Tables",
+      "font": "Myriad Pro", "font_style": "Bold", "size_pt": 8.5, "leading_pt": 11,
+      "color": "Northwind Navy", "align": "left", "hyphenate": false
+    },
+    {
+      "name": "Table Body", "group": "Tables", "based_on": "Table Header",
+      "font_style": "Regular", "color": "Text Grey"
+    }
+  ],
+  "character_styles": [
+    { "name": "Bold", "group": "Text", "font_style": "Bold" },
+    { "name": "Italic", "group": "Text", "font_style": "Italic" },
+    { "name": "Bold Italic", "group": "Text", "font_style": "Bold Italic" },
+    { "name": "Superscript", "group": "Text", "position": "superscript" },
+    { "name": "Accent", "group": "Brand", "font_style": "Bold", "color": "Northwind Teal" },
+    { "name": "Link", "group": "Brand", "color": "Northwind Teal", "underline": true }
+  ]
+}
