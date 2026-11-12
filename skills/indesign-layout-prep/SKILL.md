@@ -1,6 +1,6 @@
 ---
 name: indesign-layout-prep
-description: Prepares documents for professional layout in Adobe InDesign instead of laying them out with AI. Extracts the design system (paragraph/character styles, colours, grid) from the user's reference PDF, or reads it from their own InDesign file exported as IDML, and delivers an IDML with every style, swatch and table style plus the Word .docx content already laid out in those styles (titles, body, lists, emphasis, tables, threaded pages). Then proposes visual resources (key figures, diagrams, mind maps) as editable InDesign scripts. Also writes ExtendScript (ES3) import scripts for new text. Use when the user mentions InDesign, IDML, .indd/.indt, ExtendScript or .jsx for InDesign, maquetar/maquetación, a whitepaper, report, magazine or brochure to lay out, a style sheet or "sistema de estilos" from a PDF, or putting a Word document into InDesign.
+description: Prepares documents for professional layout in Adobe InDesign instead of laying them out with AI. Extracts the design system (paragraph/character styles, colours, grid) from the user's reference PDF, or reads it from their own InDesign file exported as IDML, and delivers an IDML with every style, swatch and table style plus the Word .docx content already laid out in those styles (titles, body, lists, emphasis, tables, threaded pages). Then proposes visual resources (key figures, diagrams, mind maps) as editable InDesign scripts. Also writes ExtendScript (ES3) scripts to import new text or to translate a laid-out .indd in a copy, keeping layout and styles. Use when the user mentions InDesign, IDML, .indd/.indt, ExtendScript or .jsx for InDesign, maquetar/maquetación, a whitepaper, report, magazine or brochure to lay out, a style sheet or "sistema de estilos" from a PDF, putting a Word document into InDesign, or translating an InDesign document (traducir una maqueta).
 ---
 
 # InDesign layout prep
@@ -44,7 +44,7 @@ No style system is bundled with this skill. Every project's styles come from
 its own reference (route A) or its own IDML (route B). Never reuse styles,
 colours or fonts from another project.
 
-## The three steps
+## The four steps
 
 Work through one step at a time. End each step with what was produced and
 what the user should check, then wait for their go-ahead.
@@ -108,6 +108,23 @@ emphasis and breathing room, images, white space, final details. Offer help
 with specific scripts (a TOC, page fitting), but don't try to finish the
 layout.
 
+### Step 4: Language versions
+
+When a document laid out in InDesign needs another language, keeping the
+layout, read `references/translate-document.md`. It also works on its own,
+for any finished InDesign document. In short:
+1. Ask for the PDF of the source document and confirm the user has the
+   `.indd`. Translate page by page, marking formatting runs with `**`, and
+   report the problems found in the source. Wait for the review.
+2. Write `translations.json`, check it against the source PDF
+   (`scripts/check_translation_pdf.py source`), build the script
+   (`scripts/build_translation_jsx.py`), then run `scripts/check_es3.py` and
+   `scripts/test_translate_mock.js`.
+3. The user runs it on the source `.indd`: it saves a copy, translates the
+   copy and writes a report.
+4. Check the translated PDF (`scripts/check_translation_pdf.py result`) and
+   list the manual layout fixes, page by page.
+
 ## Alternative: import text with a script inside InDesign
 
 Read `references/import-script.md` when the user:
@@ -127,6 +144,7 @@ before delivering.
 | `references/02-idml-document.md` | Route A: roles, tables, build and check the IDML |
 | `references/existing-idml.md` | Route B: work inside the user's own IDML |
 | `references/03-visual-resources.md` | Step 2: resource proposal and resource scripts |
+| `references/translate-document.md` | Step 4: translate a laid-out InDesign document in a copy |
 | `references/import-script.md` | Alternative: ExtendScript import inside InDesign |
 | `references/extendscript-rules.md` | ES3 rules and InDesign scripting pitfalls |
 | `scripts/build_idml.py` | Route A: style system (+ Word) to `.idml` |
@@ -135,11 +153,16 @@ before delivering.
 | `scripts/idml_content.py` | Shared: Word reading, roles, story, tables, pages |
 | `scripts/check_idml.py` | Structural check of any `.idml` before delivery |
 | `scripts/inspect_docx.py` | Report on the Word file's structure |
+| `scripts/build_translation_jsx.py` | Step 4: JSON of paragraphs to `.jsx` (escaped, validated) |
+| `scripts/check_translation_pdf.py` | Step 4: check the JSON against the source PDF, and the translated PDF |
+| `scripts/test_translate_mock.js` | Step 4: run the built script on a simulated document (Node) |
 | `scripts/check_es3.py` | Catches modern JavaScript in `.jsx` files |
 | `assets/style-system.schema.json` | Format of the style system, roles and tables |
 | `assets/import_docx.jsx` | Alternative import script template |
 | `assets/visual_resource.jsx` | Step 2 resource script template with drawing helpers |
+| `assets/translate_document.jsx` | Step 4 translation script template (`CONFIG` + logic) |
 
 If code execution is not available, still deliver the table, the JSON and
 the scripts, and tell the user how to run them locally. They only need
-Python 3.
+Python 3 (plus `pdfplumber` for the translation checks, and Node for the
+optional mock test).

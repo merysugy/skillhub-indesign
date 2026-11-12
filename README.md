@@ -2,7 +2,7 @@
 
 **Claude doesn't lay out the document. It prepares it so you can lay it out in InDesign.**
 
-> **Status: in development (v0.1.0).** This is the skill I use for my own documents. I'm improving it bit by bit, so expect changes. Feedback and issues are welcome.
+> **Status: in development (v0.2.0).** This is the skill I use for my own documents. I'm improving it bit by bit, so expect changes. Feedback and issues are welcome.
 
 A Claude skill (and Claude Code plugin) for editorial designers. It takes your
 own design reference and a Word document. Before you start designing, you get:
@@ -10,7 +10,8 @@ own design reference and a Word document. Before you start designing, you get:
 - the **style system** taken from your reference (paragraph and character styles, colours, grid),
 - **one InDesign file (.idml)** with every style in its group, every brand colour in the swatches panel, a table style, and **the Word text already laid out**: titles, lead, body, lists, bold and italics, tables, on threaded pages,
 - an empty **template** with the same styles, to save as `.indt` for the next document,
-- a **proposal of visual resources** (key figures, diagrams, mind maps, the boxes and cards of your reference) section by section, plus scripts that build them in InDesign as editable elements.
+- a **proposal of visual resources** (key figures, diagrams, mind maps, the boxes and cards of your reference) section by section, plus scripts that build them in InDesign as editable elements,
+- once the design is finished, **a version in another language**: a reviewed translation and a script that saves a copy of your .indd and replaces the text in it, keeping the layout and the styles.
 
 You lose most of the mechanical work. The pacing, emphasis, images and white space stay yours.
 
@@ -87,6 +88,7 @@ flowchart LR
     W[Word .docx] --> S1
     S1[1. IDML with styles<br/>+ text laid out] --> S2[2. Visual resources<br/>proposal + .jsx]
     S2 --> S3[3. You design<br/>in InDesign]
+    S3 --> S4[4. Language version<br/>translation + .jsx]
 ```
 
 Claude does the mechanical part of each step. The final design is yours.
@@ -96,6 +98,7 @@ Claude does the mechanical part of each step. The final design is yours.
 | 1. Styles + laid-out text | Reference PDF (A) or your IDML (B), and the Word file | Style table (estimated values flagged), the `.idml` with the text laid out, and an empty template |
 | 2. Visual resources | (from step 1) | Section-by-section proposal + one `.jsx` per resource |
 | 3. Design | Your judgement | Your layout |
+| 4. Language version | The PDF of the finished document, your `.indd`, and the target language | Page-by-page translation to review, a `.jsx` that translates a copy of your `.indd`, a report, and a list of manual fixes from the translated PDF |
 
 What step 1 places: titles and subtitles, lead, headings, body, real and typed
 lists, bold/italic/superscript as character styles, quotes, and Word tables as
@@ -104,6 +107,15 @@ InDesign tables with a table style from your identity. What it leaves for step
 
 The number of pages is an estimate (plus one spare page): InDesign composes
 the final text. If something doesn't fit it stays as overset text, never lost.
+
+**Need it in another language?** Step 4 reads the PDF of the finished
+document, translates it page by page keeping bold and coloured runs, and
+waits for your review. The translation is checked against the PDF before the
+script is built. You run the script on your `.indd`: it saves a copy, replaces
+every paragraph in the copy (including lines cut with Enter and repeated
+texts), sets the language for hyphenation and spelling, and writes a report
+with lost column starts, overset text and anything to replace by hand. Tested
+in InDesign 2026 on a 12-page document.
 
 **New text for a document you already started?** The skill also writes an
 ExtendScript (`import_docx.jsx`) that imports a Word file into the open
@@ -126,6 +138,11 @@ InDesign document with your styles, keeping bold and italics and adding pages.
 > propose graphic resources section by section. For each one: what content it
 > represents, why it helps the reader, and a sketch with the brand colours and
 > fonts. Don't lay out the full document: only the resources, in content order.
+
+**Step 4**
+> This is the PDF of my finished document in Spanish, and I have the .indd.
+> Translate it into English (US) and give me a script that replaces the Spanish text with the English
+> text in a copy of my InDesign document, keeping the layout and the styles.
 
 **Alternative: script import**
 > Write an InDesign script in ExtendScript (ES3) that asks me for a .docx and
@@ -182,6 +199,8 @@ up as `/indesign-layout-prep:indesign-layout-prep`.
 - **Adobe InDesign** (desktop, CS6 or later) to open the template and run the scripts.
 - **Python 3**, standard library only, for the template generator and the
   Word inspector. Claude runs these itself when code execution is available.
+- For step 4 checks: `pdfplumber` (Python) and, optionally, Node.js for the
+  simulated test of the translation script.
 
 ### Running an InDesign script
 
@@ -203,12 +222,16 @@ skills/indesign-layout-prep/
 │   ├── fill_idml.py              # Route B: Word laid out inside your .idml
 │   ├── idml_content.py           # Shared: Word → styled story, tables, pages
 │   ├── check_idml.py             # Structural check of any .idml
+│   ├── build_translation_jsx.py  # Step 4: translations JSON → translation script
+│   ├── check_translation_pdf.py  # Step 4: check the translation against the PDFs
+│   ├── test_translate_mock.js    # Step 4: run the script on a simulated document
 │   ├── inspect_docx.py           # Word structure report + style map for the import script
 │   └── check_es3.py              # Catches modern JavaScript before InDesign does
 └── assets/
     ├── style-system.schema.json  # Format of the style system
     ├── import_docx.jsx           # Alternative: import script for InDesign
-    └── visual_resource.jsx       # Step 2 resource script template + drawing helpers
+    ├── visual_resource.jsx       # Step 2 resource script template + drawing helpers
+    └── translate_document.jsx    # Step 4: saves a copy of the .indd and translates it
 .claude-plugin/                   # Claude Code plugin + marketplace manifests
 tools/package_skill.sh            # Builds the zip (alternative to the marketplace)
 ```

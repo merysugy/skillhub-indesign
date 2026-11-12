@@ -63,6 +63,24 @@ Always run `python3 scripts/check_es3.py file.jsx` before delivering.
 - Swatches by name: `doc.swatches.itemByName("Brand Blue")`; built-ins are
   `"None"`, `"Paper"`, `"Black"`, `"Registration"`.
 
+- **Text references are character ranges.** A stored paragraph or text
+  object points to the wrong text once something earlier in the same story
+  changes length. Keep indexes, re-fetch `container.paragraphs[i]` right
+  before each edit, and edit from the last paragraph to the first when
+  paragraphs are merged or removed.
+- **Replacing part of a paragraph**: get one Text object with
+  `p.characters.itemByRange(a, b).texts[0]` and set its `contents`. The new
+  text takes the formatting of the first replaced character, so re-apply
+  formatting afterwards if the range mixed styles.
+- **DOM objects cannot carry custom properties** (`story.myFlag = true`).
+  Keep your own wrapper objects (`{obj: story, isStory: true}`).
+- **Languages by locale**: names are localised (`"Ingl\u00E9s: EE. UU."`), so
+  loop `app.languagesWithVendors` and compare `icuLocaleName` (`"en_US"`).
+- **Where a character sits**: `ch.parentTextFrames[0]` (empty when overset)
+  and `ch.baseline`. A paragraph starts a new column when its first character
+  is in another frame than the previous paragraph's last one, or higher up in
+  the same frame.
+
 ## Installing (repeat to the user)
 
 Window > Utilities > Scripts > right-click **User** > Reveal in Finder /
