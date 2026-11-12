@@ -140,28 +140,42 @@ so they survive.
 
 ## Install
 
-### Claude.ai (web and desktop apps)
+The skill is distributed as a plugin through this repo's marketplace,
+`merysugy/skillhub-indesign`. Add the marketplace once and you get updates as
+the skill improves.
 
-1. Download `indesign-layout-prep.zip` from the
-   [latest release](https://github.com/merysugy/skillhub-indesign/releases), or build it:
-   `./tools/package_skill.sh` → `dist/indesign-layout-prep.zip`.
-2. Go to **Settings > Capabilities**, make sure **Code execution** is on, and
-   upload the zip under **Skills**.
-3. Start a chat, attach your reference PDF (or your IDML) and the Word file, and ask for step 1.
+### Claude (web and desktop apps)
 
-### Claude Code (plugin)
+1. In **Settings**, open **Plugins** and choose **Add marketplace**.
+2. Enter `merysugy/skillhub-indesign` and install the **indesign-layout-prep** plugin.
+3. In a chat, type `/indesign-layout-prep`, or simply mention InDesign or IDML
+   and the skill usually starts on its own.
+4. Attach your reference PDF (or your IDML) and the Word file, and ask for step 1.
+
+### Claude Code
 
 ```bash
 /plugin marketplace add merysugy/skillhub-indesign
+```
+
+```bash
 /plugin install indesign-layout-prep@skillhub-indesign
 ```
 
-### Claude Code (manual)
+Then attach your files and ask for step 1. In Claude Code the command shows
+up as `/indesign-layout-prep:indesign-layout-prep`.
 
-```bash
-git clone https://github.com/merysugy/skillhub-indesign.git
-cp -r skillhub-indesign/skills/indesign-layout-prep ~/.claude/skills/
-```
+### Other ways (no marketplace)
+
+- **Upload the skill as a zip**: download `indesign-layout-prep.zip` from the
+  [latest release](https://github.com/merysugy/skillhub-indesign/releases) (or
+  build it with `./tools/package_skill.sh`) and upload it in **Settings >
+  Capabilities > Skills**, with code execution on.
+- **Copy the folder** for Claude Code:
+  ```bash
+  git clone https://github.com/merysugy/skillhub-indesign.git
+  cp -r skillhub-indesign/skills/indesign-layout-prep ~/.claude/skills/
+  ```
 
 ### Requirements
 
@@ -196,7 +210,7 @@ skills/indesign-layout-prep/
     ├── import_docx.jsx           # Alternative: import script for InDesign
     └── visual_resource.jsx       # Step 2 resource script template + drawing helpers
 .claude-plugin/                   # Claude Code plugin + marketplace manifests
-tools/package_skill.sh            # Builds the zip for claude.ai
+tools/package_skill.sh            # Builds the zip (alternative to the marketplace)
 ```
 
 You can also use the tools without Claude:
