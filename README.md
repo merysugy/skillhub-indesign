@@ -2,6 +2,8 @@
 
 **Claude doesn't lay out the document. It prepares it so you can lay it out in InDesign.**
 
+[![skills.sh](https://skills.sh/b/merysugy/skillhub-indesign)](https://skills.sh/merysugy/skillhub-indesign)
+
 > **Status: in development (v0.3.0).** This is the skill I use for my own documents. I'm improving it bit by bit, so expect changes. Feedback and issues are welcome.
 
 A Claude skill (and Claude Code plugin) for editorial designers, in any
@@ -216,6 +218,22 @@ the skill improves.
 
 Then attach your files and ask for phase 1. In Claude Code the command shows
 up as `/indesign-layout-prep:indesign-layout-prep`.
+
+### With the skills CLI ([skills.sh](https://skills.sh/merysugy/skillhub-indesign))
+
+Works with Claude Code and the other agents the
+[skills CLI](https://github.com/vercel-labs/skills) supports. It installs the
+skill in the current project; add `-g` to install it for all your projects.
+
+```bash
+npx skills add merysugy/skillhub-indesign --skill indesign-layout-prep
+```
+
+To get the latest version later:
+
+```bash
+npx skills update
+```
 
 ### Other ways (no marketplace)
 
