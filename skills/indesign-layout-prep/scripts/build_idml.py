@@ -23,7 +23,7 @@ of the text length (plus one spare page).
 
 Only the Python 3 standard library is used. See ../assets/style-system.schema.json
 for the input format. The style system is always extracted from the user's own
-reference (step 1) or from their IDML (extract_idml.py); none is bundled.
+reference (route A) or from their IDML (extract_idml.py); none is bundled.
 """
 
 import argparse

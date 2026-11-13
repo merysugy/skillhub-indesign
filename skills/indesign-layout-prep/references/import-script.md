@@ -1,6 +1,6 @@
 # Alternative - Import the text with a script inside InDesign
 
-The default is to deliver the text already laid out in the IDML (step 1).
+The default is to deliver the text already laid out in the IDML (phase 3).
 Use this script instead when the user already has a document started in
 InDesign and new text arrives, when the Word file is very long and they
 prefer InDesign to create the pages, or when they ask for it.

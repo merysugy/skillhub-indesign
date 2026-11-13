@@ -1,5 +1,5 @@
 // visual_resource.jsx
-// Step 4 of the indesign-layout-prep workflow.
+// Script alternative for visual resources (the default is an .idms block, phase 4).
 //
 // Builds one visual resource (here: a "key figure" box) on the current page,
 // using the swatches and styles that already exist in the document, and

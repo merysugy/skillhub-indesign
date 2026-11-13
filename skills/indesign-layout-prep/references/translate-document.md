@@ -1,6 +1,6 @@
-# Step 4 - Translate a laid-out InDesign document
+# Alternative - Translate an existing InDesign document
 
-The last step of the workflow, and usable on its own. Use this when the user wants a document already laid out in InDesign (or a
+Use this when the user wants a document already laid out in InDesign (or a
 PDF exported from InDesign) in another language, keeping the layout. The
 result is a copy of their `.indd` with every paragraph replaced in place:
 same frames, styles, master pages and formatting runs. Nothing is rebuilt.
@@ -12,7 +12,7 @@ Ask in one message only for what is missing:
 1. **The PDF of the source document.** Claude reads the text, the formatting
    runs and the layout from it.
 2. **Whether they have the `.indd` (or IDML).** Without it this route does not
-   apply: offer route A of step 1 to rebuild the layout from the PDF, or a
+   apply: offer route A (phases 1 and 3) to rebuild the layout from the PDF, or a
    conversion with their own tools, and say what each one loses.
 3. **Replace in a copy or create a new document.** Recommend the copy: it keeps
    the layout and styles. The rest of this file assumes it.

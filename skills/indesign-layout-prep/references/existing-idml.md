@@ -78,8 +78,9 @@ python3 scripts/check_idml.py laid-out.idml
 ## Then
 
 - **What is not placed:** covers, captions, sidebars and images. The script
-  doesn't know where those go. They stay with the designer, or go to step 2
-  as visual resources.
-- **Step 2:** use their swatch names and styles in `visual_resource.jsx`.
+  doesn't know where those go. They stay with the designer, or go to phase 4
+  as editable blocks.
+- **Phase 4:** use their swatch and style names in the blocks (`.idms`), or in
+  `visual_resource.jsx` when a script is needed.
 - **New text later:** run `fill_idml.py` again with the new Word file, or use
   the ExtendScript import script inside InDesign (`import-script.md`).

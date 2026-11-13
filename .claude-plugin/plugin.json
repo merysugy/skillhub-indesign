@@ -1,7 +1,7 @@
 {
   "name": "indesign-layout-prep",
-  "version": "0.2.0",
-  "description": "Claude prepares, the designer lays out: extract a style system from a reference PDF, generate an InDesign IDML template, import Word text with styles applied via ExtendScript, propose visual resources as editable InDesign scripts, and translate the finished .indd into another language keeping layout and styles.",
+  "version": "0.3.0",
+  "description": "Claude prepares, the designer lays out: review the content, extract a style system from a reference PDF or your IDML, propose graphic elements and a full layout, build an IDML with styles and the Word text laid out, turn captures into editable .idms blocks, and translate the finished .indd keeping layout and styles.",
   "author": {
     "name": "Maria Sugasaga",
     "url": "https://github.com/merysugy"

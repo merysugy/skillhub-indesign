@@ -75,8 +75,8 @@ restyle every table at once from InDesign's Table Styles panel. Without a
 `tables` block, tables use `[Basic Table]`.
 
 Compositions that are not plain tables (cards, boxes next to an image,
-bands, mind maps) are not built in step 1. They go to step 2 as visual
-resources.
+bands, mind maps) are not built in the IDML (phase 3). They go to phase 4
+as editable blocks.
 
 ## 3. Build and check
 

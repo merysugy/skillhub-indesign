@@ -2,15 +2,19 @@
 
 **Claude doesn't lay out the document. It prepares it so you can lay it out in InDesign.**
 
-> **Status: in development (v0.2.0).** This is the skill I use for my own documents. I'm improving it bit by bit, so expect changes. Feedback and issues are welcome.
+> **Status: in development (v0.3.0).** This is the skill I use for my own documents. I'm improving it bit by bit, so expect changes. Feedback and issues are welcome.
 
-A Claude skill (and Claude Code plugin) for editorial designers. It takes your
-own design reference and a Word document. Before you start designing, you get:
+A Claude skill (and Claude Code plugin) for editorial designers, in any
+language. It takes your own design reference and a Word document. Before you
+start designing, you get:
 
+- a **review of the content**: repeated versions of the same text, claims and figures without a source, text copied from another document, real data in screenshots,
 - the **style system** taken from your reference (paragraph and character styles, colours, grid),
+- a **proposal of graphic elements** section by section, and a **full layout proposal** as a PDF in your reference's style, so decisions are made on something visual,
 - **one InDesign file (.idml)** with every style in its group, every brand colour in the swatches panel, a table style, and **the Word text already laid out**: titles, lead, body, lists, bold and italics, tables, on threaded pages,
 - an empty **template** with the same styles, to save as `.indt` for the next document,
-- a **proposal of visual resources** (key figures, diagrams, mind maps, the boxes and cards of your reference) section by section, plus scripts that build them in InDesign as editable elements,
+- **editable blocks (.idms)**: send a capture of a diagram, box, card or key figure and you get a file to drag onto your page, as native InDesign objects with your styles and swatches,
+- **proposals from captures**: where your product screenshots fit, or what to put in an empty area of a page,
 - once the design is finished, **a version in another language**: a reviewed translation and a script that saves a copy of your .indd and replaces the text in it, keeping the layout and the styles.
 
 You lose most of the mechanical work. The pacing, emphasis, images and white space stay yours.
@@ -29,9 +33,10 @@ for each document by its use, its goal and how it gets made.
   needs retouching, so you keep iterating on one element and regenerating the
   whole file to fix a small detail. That wastes tokens.
 - **So the two are combined.** Claude extracts the design, style and identity
-  from a finished document and writes scripts that import the text straight
-  into InDesign, with styles, columns and structure in place. All that's left is
-  adding diagrams, images and visual elements.
+  from a reference, builds an InDesign file with the text already laid out in
+  those styles, and turns diagrams, boxes and cards into editable blocks you
+  drag onto the page. All that's left is the design itself: rhythm, emphasis,
+  images and white space.
 
 ### What I tried first
 
@@ -83,32 +88,53 @@ reference or your own IDML.
 
 ```mermaid
 flowchart LR
-    A[Route A: reference PDF] --> S1
-    B[Route B: your IDML] --> S1
-    W[Word .docx] --> S1
-    S1[1. IDML with styles<br/>+ text laid out] --> S2[2. Visual resources<br/>proposal + .jsx]
-    S2 --> S3[3. You design<br/>in InDesign]
-    S3 --> S4[4. Language version<br/>translation + .jsx]
+    A[Route A: reference PDF] --> P1
+    B[Route B: your IDML] --> P1
+    W[Word .docx] --> P1
+    P1[1. Content review<br/>+ identity + elements] --> P2[2. Layout proposal<br/>PDF]
+    P2 --> P3[3. IDML with styles<br/>+ text laid out]
+    P3 --> P4[4. Editable blocks .idms<br/>+ proposals from captures]
+    P4 --> P5[5. You design<br/>in InDesign]
+    P5 -.-> T[Translation<br/>.jsx on a copy]
 ```
 
-Claude does the mechanical part of each step. The final design is yours.
+Claude does the mechanical part of each phase, shows every proposal before
+building anything, and waits for your go-ahead between phases. The final
+design is yours.
 
-| Step | You give | You get |
+| Phase | You give | You get |
 | --- | --- | --- |
-| 1. Styles + laid-out text | Reference PDF (A) or your IDML (B), and the Word file | Style table (estimated values flagged), the `.idml` with the text laid out, and an empty template |
-| 2. Visual resources | (from step 1) | Section-by-section proposal + one `.jsx` per resource |
-| 3. Design | Your judgement | Your layout |
-| 4. Language version | The PDF of the finished document, your `.indd`, and the target language | Page-by-page translation to review, a `.jsx` that translates a copy of your `.indd`, a report, and a list of manual fixes from the translated PDF |
+| 1. Review and analyse | Reference PDF (A) or your IDML (B), and the Word file | Content review with options to decide, style table (estimated values flagged), graphic-elements proposal section by section, including the sales space (closing page, call to action, contacts) |
+| 2. Layout proposal | Your feedback on phase 1 | The whole document as a PDF in the reference style, with the text Claude wrote marked, and a list of what changed and what's pending |
+| 3. IDML | Your go-ahead | The `.idml` with the text laid out, an empty template, and a check of both files |
+| 4. Blocks and captures | A capture of an element, of your product screens, or of an empty page area | An `.idms` block to drag in (with a preview compared to your capture), or a proposal shown in context |
+| 5. Design | Your judgement | Your layout |
+| Translation | The PDF of the finished document, your `.indd`, and the target language | Page-by-page translation to review, a `.jsx` that translates a copy of your `.indd`, a report, and a list of manual fixes from the translated PDF |
 
-What step 1 places: titles and subtitles, lead, headings, body, real and typed
+Most of the iteration happens in phase 4, with short requests and a
+screenshot: "make it editable", "where would these screenshots go", "what
+could go here". If the capture shows something Claude proposed earlier, it
+recognises it and builds from that model. An `.idms` from another
+conversation can be converted back to a model and changed, instead of being
+redrawn.
+
+Graphic elements come as `.idms` blocks, not as scripts. A block is placed
+directly, like any file, arrives as native objects with the document's styles
+and swatches, and has a preview checked against your capture before it's
+delivered. Scripts for diagrams gave problems in practice, so they are only
+an alternative for elements that have to be computed inside the open
+document.
+
+What phase 3 places: titles and subtitles, lead, headings, body, real and typed
 lists, bold/italic/superscript as character styles, quotes, and Word tables as
-InDesign tables with a table style from your identity. What it leaves for step
-2 and for you: boxes, cards, bands, mind maps, images, covers and captions.
+InDesign tables with a table style from your identity. Boxes, cards, bands and
+diagrams come as `.idms` blocks in phase 4. Images, covers and master page
+items (header, footer, page number) stay with you.
 
 The number of pages is an estimate (plus one spare page): InDesign composes
 the final text. If something doesn't fit it stays as overset text, never lost.
 
-**Need it in another language?** Step 4 reads the PDF of the finished
+**Need it in another language?** The translation reads the PDF of the finished
 document, translates it page by page keeping bold and coloured runs, and
 waits for your review. The translation is checked against the PDF before the
 script is built. You run the script on your `.indd`: it saves a copy, replaces
@@ -123,23 +149,30 @@ InDesign document with your styles, keeping bold and italics and adding pages.
 
 ### Example prompts
 
-**Step 1, route A**
+**Phase 1**
 > Analyse this PDF as the design and identity base, and the Word document as
-> the content. Extract titles, colours and fonts into a table, then generate an
-> IDML with every paragraph, character and table style based on that identity,
-> and the Word document laid out following the same visual style.
+> the content. Review the content, extract titles, colours and fonts into a
+> table, and propose graphic elements section by section.
 
-**Step 1, route B**
+**Phase 2**
+> Make a full layout proposal in that style.
+
+**Phase 3, route A**
+> Send it to InDesign: an IDML with every paragraph, character and table style
+> based on that identity, and the Word document laid out.
+
+**Phase 3, route B**
 > Here's my InDesign template as IDML and the Word file. Lay the text out in
 > my template using my styles.
 
-**Step 2**
-> With the context and content you've analysed, and with this identity,
-> propose graphic resources section by section. For each one: what content it
-> represents, why it helps the reader, and a sketch with the brand colours and
-> fonts. Don't lay out the full document: only the resources, in content order.
+**Phase 4**
+> (with a capture of a diagram) Make this editable so I can place it in InDesign.
 
-**Step 4**
+> (with screenshots of the app) Where would these go in the document?
+
+> (with a capture of an empty area) What could go here? Prepare the editable file too.
+
+**Translation**
 > This is the PDF of my finished document in Spanish, and I have the .indd.
 > Translate it into English (US) and give me a script that replaces the Spanish text with the English
 > text in a copy of my InDesign document, keeping the layout and the styles.
@@ -148,10 +181,12 @@ InDesign document with your styles, keeping bold and italics and adding pages.
 > Write an InDesign script in ExtendScript (ES3) that asks me for a .docx and
 > places it in my open document with my styles.
 
-The skill already knows the pitfalls: it never hand-writes IDML (it uses
-tested generators and checks every file before handing it over), it writes
-ES3 for InDesign scripts, and it turns bold and italics into character styles
-so they survive.
+The skill already knows the pitfalls: it never hand-writes IDML or IDMS (it
+uses tested generators and checks every file before handing it over), it
+never reuses styles, colours or content from another project, it never
+invents figures, it writes ES3 for InDesign scripts, and it turns bold and
+italics into character styles so they survive. It also says what it checked
+and what it couldn't: Claude can't open InDesign.
 
 ---
 
@@ -167,7 +202,7 @@ the skill improves.
 2. Enter `merysugy/skillhub-indesign` and install the **indesign-layout-prep** plugin.
 3. In a chat, type `/indesign-layout-prep`, or simply mention InDesign or IDML
    and the skill usually starts on its own.
-4. Attach your reference PDF (or your IDML) and the Word file, and ask for step 1.
+4. Attach your reference PDF (or your IDML) and the Word file, and ask for phase 1.
 
 ### Claude Code
 
@@ -179,7 +214,7 @@ the skill improves.
 /plugin install indesign-layout-prep@skillhub-indesign
 ```
 
-Then attach your files and ask for step 1. In Claude Code the command shows
+Then attach your files and ask for phase 1. In Claude Code the command shows
 up as `/indesign-layout-prep:indesign-layout-prep`.
 
 ### Other ways (no marketplace)
@@ -196,11 +231,18 @@ up as `/indesign-layout-prep:indesign-layout-prep`.
 
 ### Requirements
 
-- **Adobe InDesign** (desktop, CS6 or later) to open the template and run the scripts.
-- **Python 3**, standard library only, for the template generator and the
-  Word inspector. Claude runs these itself when code execution is available.
-- For step 4 checks: `pdfplumber` (Python) and, optionally, Node.js for the
-  simulated test of the translation script.
+- **Adobe InDesign** (desktop, CS6 or later) to open the files and run the scripts.
+- **Python 3**, standard library only, for the IDML and IDMS generators and
+  the checks. Claude runs these itself when code execution is available.
+- For block previews: `Pillow` and `fontTools` (Python).
+- For translation checks: `pdfplumber` (Python) and, optionally, Node.js for
+  the simulated test of the translation script.
+
+### Placing an .idms block
+
+Drag the `.idms` onto the page, or use **File > Place**. If it has images,
+keep the `Links` folder next to it and relink them with **Window > Links >
+Relink** if they show as missing.
 
 ### Running an InDesign script
 
@@ -215,23 +257,28 @@ Each script can be undone in one step with **Edit > Undo**.
 ```
 skills/indesign-layout-prep/
 ├── SKILL.md                      # The workflow Claude follows
-├── references/                   # One guide per step + ExtendScript rules
+├── references/                   # One guide per phase + ExtendScript rules
 ├── scripts/
 │   ├── build_idml.py             # Route A: style system (+ Word) → .idml
 │   ├── extract_idml.py           # Route B: your .idml → style-system JSON
 │   ├── fill_idml.py              # Route B: Word laid out inside your .idml
 │   ├── idml_content.py           # Shared: Word → styled story, tables, pages
-│   ├── check_idml.py             # Structural check of any .idml
-│   ├── build_translation_jsx.py  # Step 4: translations JSON → translation script
-│   ├── check_translation_pdf.py  # Step 4: check the translation against the PDFs
-│   ├── test_translate_mock.js    # Step 4: run the script on a simulated document
+│   ├── build_snippet.py          # Phase 4: block model → .idms
+│   ├── preview_model.py          # Phase 4: PNG preview of a block, alone or on a page
+│   ├── idms_to_model.py          # Phase 4: an earlier .idms back to a model
+│   ├── snippet_model.py          # Shared: loads and checks a block model
+│   ├── check_idml.py             # Structural check of any .idml or .idms
+│   ├── build_translation_jsx.py  # Translation: JSON → translation script
+│   ├── check_translation_pdf.py  # Translation: check against the PDFs
+│   ├── test_translate_mock.js    # Translation: run the script on a simulated document
 │   ├── inspect_docx.py           # Word structure report + style map for the import script
 │   └── check_es3.py              # Catches modern JavaScript before InDesign does
 └── assets/
     ├── style-system.schema.json  # Format of the style system
+    ├── snippet-model.example.json # Block model example (neutral styles)
     ├── import_docx.jsx           # Alternative: import script for InDesign
-    ├── visual_resource.jsx       # Step 2 resource script template + drawing helpers
-    └── translate_document.jsx    # Step 4: saves a copy of the .indd and translates it
+    ├── visual_resource.jsx       # Alternative only: an element computed inside the open document
+    └── translate_document.jsx    # Translation: saves a copy of the .indd and translates it
 .claude-plugin/                   # Claude Code plugin + marketplace manifests
 tools/package_skill.sh            # Builds the zip (alternative to the marketplace)
 ```
@@ -244,6 +291,9 @@ python3 skills/indesign-layout-prep/scripts/build_idml.py my-styles.json -o my-t
 python3 skills/indesign-layout-prep/scripts/build_idml.py my-styles.json -o my-document.idml --content content.docx
 python3 skills/indesign-layout-prep/scripts/fill_idml.py my-template.idml my-styles.json content.docx -o my-document.idml
 python3 skills/indesign-layout-prep/scripts/check_idml.py my-document.idml
+python3 skills/indesign-layout-prep/scripts/build_snippet.py my-block.json -o my-block.idms --zip
+python3 skills/indesign-layout-prep/scripts/preview_model.py my-block.json -o my-block.png --fonts ~/Library/Fonts
+python3 skills/indesign-layout-prep/scripts/idms_to_model.py my-block.idms -o my-block.json
 python3 skills/indesign-layout-prep/scripts/inspect_docx.py content.docx --style-system my-styles.json
 python3 skills/indesign-layout-prep/scripts/check_es3.py my-script.jsx
 ```
@@ -268,8 +318,8 @@ Those are what add real value to the result.
 ## Contributing
 
 Issues and pull requests are welcome, especially reports from real InDesign
-versions (what opened cleanly and what didn't), and new resource templates
-for step 2.
+versions (what opened cleanly and what didn't), and `.idms` elements the
+block builder doesn't support yet (gradients, object styles, tables).
 
 ## License
 

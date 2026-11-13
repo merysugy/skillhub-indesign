@@ -1,5 +1,5 @@
 // import_docx.jsx
-// Step 3 of the indesign-layout-prep workflow.
+// Script alternative of the indesign-layout-prep workflow: import a Word file inside InDesign.
 //
 // Imports a Word document (.docx) into the active InDesign document and
 // leaves it styled with YOUR template styles:

@@ -4,7 +4,7 @@ extract_idml.py - Read the style system out of an existing InDesign file.
 
 For users who already have their styles in InDesign: they export the document
 or template as IDML (File > Save As > InDesign Markup (IDML)) and this script
-writes the same style-system JSON that step 1 produces from a PDF:
+writes the same style-system JSON that route A produces from a PDF:
 page setup, swatches, and every paragraph and character style with its group,
 based-on style, font, size, leading, spacing, colour and alignment.
 

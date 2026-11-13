@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-check_idml.py - Structural check of an .idml package before handing it over.
+check_idml.py - Structural check of an .idml package or an .idms snippet before
+handing it over.
 
 InDesign is not available to Claude, so this catches the mistakes that would
 make InDesign refuse or damage the file:
@@ -13,11 +14,16 @@ make InDesign refuse or damage the file:
   * stories: StoryList matches the story parts; text frame chains are linked
     both ways; sections start on an existing page and cover every page.
 
-    python3 check_idml.py file.idml [more.idml ...]
+    python3 check_idml.py file.idml [block.idms ...]
+
+For a snippet: well-formed XML, one spread, no duplicate ids, every style,
+colour, layer and story it refers to defined inside it, and linked images
+present next to it (warning).
 
 Exit code 0 = no errors. Only the Python 3 standard library is used.
 """
 
+import os
 import posixpath
 import re
 import sys
@@ -46,7 +52,61 @@ def local(tag):
     return tag.rsplit("}", 1)[-1]
 
 
+def check_snippet(path):
+    """A .idms snippet: one XML document with its own resources and stories."""
+    errors, warnings = [], []
+    try:
+        root = ET.parse(path).getroot()
+    except (OSError, ET.ParseError) as exc:
+        return ["not well-formed XML: %s" % exc], []
+    with open(path, encoding="utf-8") as fh:
+        head = fh.read(400)
+    if 'type="snippet"' not in head:
+        warnings.append("no snippet processing instruction: InDesign may not recognise it")
+    if local(root.tag) != "Document":
+        errors.append("the root element must be <Document>")
+    selfs, kinds = {}, {}
+    for el in root.iter():
+        sid = el.get("Self")
+        if not sid:
+            continue
+        if sid in selfs:
+            errors.append("duplicate Self id %r" % sid)
+        selfs[sid] = True
+        kinds[sid] = local(el.tag)
+    for el in root.iter():
+        for attr in REF_ATTRS:
+            value = el.get(attr)
+            if not value or value in BUILTIN_OK or value in selfs:
+                continue
+            if REF_ATTRS[attr] == "color" and value.startswith("Swatch/"):
+                continue
+            errors.append("%s=%r on <%s> points to nothing" % (attr, value, local(el.tag)))
+        for prop in ("BasedOn", "NextStyle"):
+            if local(el.tag) == prop and el.get("type") == "object" and el.text \
+                    and el.text not in selfs and el.text not in BUILTIN_OK:
+                errors.append("%s %r points to nothing" % (prop, el.text))
+    used = {el.get("ParentStory") for el in root.iter() if local(el.tag) == "TextFrame"}
+    for sid, k in kinds.items():
+        if k == "Story" and sid not in used:
+            warnings.append("story %s is not in any text frame" % sid)
+    spreads = [el for el in root if local(el.tag) == "Spread"]
+    if len(spreads) != 1:
+        errors.append("a page-item snippet has exactly one <Spread>, found %d" % len(spreads))
+    base = os.path.dirname(os.path.abspath(path))
+    for el in root.iter():
+        if local(el.tag) == "Link":
+            uri = el.get("LinkResourceURI", "")
+            rel = uri[5:] if uri.startswith("file:") else uri
+            if not os.path.exists(os.path.join(base, rel)) and not os.path.exists(rel):
+                warnings.append("linked file %s is not next to the snippet" % rel)
+    return errors, warnings
+
+
 def check(path):
+    if not zipfile.is_zipfile(path):
+        if path.lower().endswith(".idms"):
+            return check_snippet(path)
     errors, warnings = [], []
     try:
         zf = zipfile.ZipFile(path)

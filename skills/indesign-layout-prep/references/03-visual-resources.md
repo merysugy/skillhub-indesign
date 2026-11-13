@@ -1,41 +1,70 @@
-# Step 2 - Propose visual resources
+# Visual resources: proposal (phases 1-2) and script alternative
 
-Goal: a proposal the designer can use as a sketchbook, and the chosen pieces
-as InDesign scripts that build editable elements.
+Goal: in phase 1, a table of graphic elements the user can approve; in
+phase 2, the whole document laid out as a proposal in the reference style.
+Both come before any InDesign work, so decisions are made on something
+visual.
 
-## Prompt this step answers
-
-> With the context and content you have analysed, and with this identity,
-> propose graphic resources section by section. For each one: what content it
-> represents, why it helps the reader, and a sketch with the brand colours and
-> fonts. Do not lay out the full document: only the resources, in content
-> order.
-
-## Build the proposal
+## Phase 1 - Graphic-elements proposal
 
 1. Read the content: extract the key words, the strong points, numbers,
    processes, comparisons, lists of concepts, and quotable sentences.
-2. For each section, propose 0-3 resources. Types:
-   - **Key figure**: a number that carries the argument (68%, 3x, 2027).
-   - **Diagram / process**: steps, flows, cause and effect.
+2. Inventory the reference: which compositions it uses (key-figure boxes,
+   callouts, cards, bands with images, numbered steps, diagrams, comparison
+   tables, cover, closing page) and how they are styled.
+3. For each section, propose 0-3 elements. Types:
+   - **Key figure**: a number that carries the argument. Only real figures
+     with a source; if there are none, a qualitative box or a marked gap.
+   - **Diagram / process**: steps, flows, cause and effect, layers.
    - **Mind map**: a concept with branches.
-   - **Comparison**: before/after, option A vs B, table of features.
+   - **Comparison**: before/after, option A vs B, table of capabilities.
    - **Pull quote**: a sentence worth isolating.
    - **Screenshot**: a tool or interface the text describes.
    - **Image**: a photo or illustration (describe it; do not invent stock).
-   - **Reference compositions**: the boxes, cards, bands, numbered steps or
-     mind maps seen in the reference (step 1 places only text and tables).
-     Reuse them where the content fits the same pattern.
-3. For each resource write: section, type, what it represents, why it helps
-   the reader, and a sketch. Prefer fewer, stronger resources over one per
-   paragraph.
-4. Sketches use only the brand palette and styles from step 1.
+   - **Reference compositions**: reuse the reference's boxes, cards, bands
+     and steps where the content fits the same pattern.
+4. **Sales space.** Include where the document sells: the closing page (a
+   headline, one line, a call to action, contact people with role and
+   email), where the product is first named, and any contact or demo
+   prompt. If the reference has a closing page, follow its structure so the
+   documents read as a series; never copy its text or contacts.
+5. Deliver a table: section | element | what it represents | why it helps |
+   notes (data or text still needed). Prefer fewer, stronger elements over
+   one per paragraph.
 
-Deliver the proposal as a PDF (or HTML page) with one block per resource, in
-content order. It is a sketch for the designer, not the layout: keep it
-simple, no full pages.
+## Phase 2 - Full layout proposal
 
-## Turn a chosen resource into a script
+Lay out the whole document as a PDF that looks like the reference: same
+page size, grid, header and footer, fonts, colours and compositions. It is a
+proposal to react to, built quickly, not the final design.
+
+- **How:** one HTML file with the document's CSS (fonts embedded with
+  `@font-face`, colours as variables) rendered to PDF (WeasyPrint or a
+  headless browser). Diagrams as inline SVG; boxes and cards as HTML.
+- **Fonts:** use the reference's fonts if their licence allows it (check:
+  SIL OFL fonts can be embedded); otherwise the closest available, and say so.
+- **Images:** the reference's photos belong to its project. Use generated
+  abstract backgrounds or marked placeholders instead.
+- **Text you write** (titles, box texts, captions, FAQ questions) is marked
+  in the delivery. Claims to verify can be highlighted in the PDF.
+- **Look at every page** rendered as an image before delivering: overflowing
+  text, empty thirds of a page, elements covering titles, wrong breaks.
+- **Rendering pitfalls seen in practice (WeasyPrint):** gradients inside an
+  SVG used as a CSS background may not render (put the gradient in CSS and
+  keep only the pattern in the SVG); `box-shadow` can leave streaks (use a
+  border); keep diagram SVGs inline and sized in pt.
+- After the PDF, list what changed from the draft (merged or dropped text),
+  what you wrote, and what is pending (contacts, figures, sources).
+
+Building elements: once the user picks elements from the proposal, they
+become `.idms` blocks (phase 4, `04-idms-blocks.md`).
+
+## Turn a chosen resource into a script (alternative)
+
+The default for an editable element is an `.idms` block the user drags into
+the page (phase 4, `04-idms-blocks.md`). Use a script only when the element
+has to be computed inside the open document (repeated on many pages, placed
+relative to existing frames) or the user asks for a script.
 
 The PDF is not editable in InDesign, so each resource the user picks becomes
 a `.jsx` that draws it inside the document with the template's swatches and

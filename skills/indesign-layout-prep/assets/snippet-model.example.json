@@ -1,0 +1,34 @@
+{
+  "name": "Block · Key figure + process",
+  "font_family": "Project Font",
+  "layer": "Layer 1",
+  "colors": {
+    "Accent": [0, 120, 180],
+    "Accent light": [225, 238, 248],
+    "Ink": [60, 60, 60],
+    "Connector": [120, 120, 120]
+  },
+  "paragraph_styles": {
+    "Figure": {"font": "Bold", "size": 28, "leading": 30, "color": "Accent", "align": "center", "space_after": 6},
+    "Figure label": {"font": "Regular", "size": 9, "leading": 13, "color": "Accent", "align": "center"},
+    "Step title": {"font": "Bold", "size": 8.5, "leading": 11, "color": "Paper", "align": "center", "caps": true},
+    "Caption": {"font": "Italic", "size": 8, "leading": 11, "color": "Ink", "align": "center"}
+  },
+  "character_styles": {
+    "Emphasis": {"font": "Bold", "color": "Ink"}
+  },
+  "items": [
+    {"type": "text", "name": "Key figure", "x": 0, "y": 0, "w": 160, "h": 90,
+     "fill": "Accent light", "stroke": "Accent", "stroke_weight": 1, "radius": 8,
+     "inset": [12, 10, 10, 10], "valign": "center",
+     "paragraphs": [["Figure", "[figure]"], ["Figure label", "[what the figure means, with its source]"]]},
+    {"type": "line", "points": [[160, 45], [190, 45]], "color": "Connector", "weight": 0.8},
+    {"type": "polygon", "points": [[190, 41.5], [196, 45], [190, 48.5]], "fill": "Connector"},
+    {"type": "text", "name": "Step", "x": 196, "y": 25, "w": 140, "h": 40,
+     "fill": "Accent", "radius": 20, "valign": "center", "inset": [0, 8, 0, 8],
+     "paragraphs": [["Step title", "Next step"]]},
+    {"type": "oval", "cx": 336, "cy": 25, "r": 7, "fill": "Ink", "stroke": "Paper", "stroke_weight": 1.5},
+    {"type": "text", "name": "Caption", "x": 0, "y": 100, "w": 336, "h": 14,
+     "paragraphs": [{"style": "Caption", "runs": ["A caption with ", {"style": "Emphasis", "text": "one emphasised part"}, "."]}]}
+  ]
+}

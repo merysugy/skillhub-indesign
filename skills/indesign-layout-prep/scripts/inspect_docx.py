@@ -2,7 +2,7 @@
 """
 inspect_docx.py - Report how a Word document is structured before importing it.
 
-Tells you which case of step 3 you are in:
+Tells you which case of the import script (references/import-script.md) you are in:
   * Well-styled Word (Heading 1/2, Normal...): import with InDesign's own
     style mapping, no script needed.
   * Hand-made Word (bold lines as headings, "-" lists, manual indents):

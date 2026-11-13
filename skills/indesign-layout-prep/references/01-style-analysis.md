@@ -1,4 +1,4 @@
-# Step 1, route A - Analyse identity and styles
+# Phase 1, route A - Analyse identity and styles
 
 Goal: a style system the designer can validate in one read, and the same
 system as `style-system.json` for the generator.
@@ -31,8 +31,8 @@ From the PDF (or InDesign export):
    from a PDF render are estimates unless the PDF states them.
 4. **Repeated resources**: callout boxes, key figures, pull quotes, captions,
    sources, tables, icons, rules. Each becomes a style (or a set of styles)
-   and is noted for step 2 (visual resources), except plain tables, which
-   get a `tables` block.
+   and is noted for the graphic-elements proposal (phase 1) and the editable
+   blocks (phase 4), except plain tables, which get a `tables` block.
 
 From the Word document: which roles the content actually needs (how many
 heading levels, lists, quotes, tables, footnotes, captions). Do not add styles
@@ -100,15 +100,18 @@ projects). Notes:
 - `estimated` is `true` or a list of fields; the generator prints them so the
   designer checks them in InDesign.
 - `maps_from` lists the Word style names that become this style (`Heading 1`,
-  `Título 1`...). The step-3 inspector uses it to write the import map.
+  `Título 1`...). The import inspector (`scripts/inspect_docx.py`) uses it to write the import map.
 - Only `Black`, `Paper`, `Registration` and `None` exist without being defined.
 
 Then add the `roles` block (and `tables` if the content has tables) as
 explained in `02-idml-document.md`, and build the IDML.
 
-## Deliver with the IDML
+## Deliver
 
-Show the tables and the grid with the estimated values listed, together with
-the laid-out IDML. Reviewing in InDesign is faster than reading a table, and
-a correction only means editing the JSON and running the scripts again. Do
-not move to step 2 (visual resources) until the user is happy with step 1.
+In phase 1, show the tables and the grid with the estimated values listed,
+together with the graphic-elements proposal. The IDML comes in phase 3, after
+the layout proposal (phase 2) is approved. If the user wants to skip the
+proposal, build the IDML right after the tables: reviewing in InDesign is
+faster than reading a table, and a correction only means editing the JSON and
+running the scripts again. Do not move to phase 2 until the user is happy
+with the analysis.
