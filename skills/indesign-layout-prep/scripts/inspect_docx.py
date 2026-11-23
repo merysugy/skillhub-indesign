@@ -64,7 +64,7 @@ def inspect(path):
     body = root.find(W + "body")
     report = {"styles": {}, "manual_headings": [], "manual_lists": [], "word_lists": 0,
               "indented": [], "tables": 0, "images": 0, "paragraphs": 0,
-              "bold_runs": 0, "italic_runs": 0}
+              "bold_runs": 0, "italic_runs": 0, "sup_runs": 0, "sub_runs": 0}
 
     report["tables"] = len(list(body.iter(W + "tbl")))
     report["images"] = len(list(body.iter(W + "drawing"))) + len(list(body.iter(W + "pict")))
@@ -84,7 +84,9 @@ def inspect(path):
             rpr = run.find(W + "rPr")
             bold = rpr is not None and on(rpr.find(W + "b"))
             italic = rpr is not None and on(rpr.find(W + "i"))
-            runs.append((text, bold, italic))
+            va = rpr.find(W + "vertAlign") if rpr is not None else None
+            position = va.get(W + "val") if va is not None else None
+            runs.append((text, bold, italic, position))
         text = "".join(r[0] for r in runs).strip()
         if not text:
             continue
@@ -93,6 +95,8 @@ def inspect(path):
         report["styles"][style] = report["styles"].get(style, 0) + 1
         report["bold_runs"] += sum(1 for r in runs if r[1])
         report["italic_runs"] += sum(1 for r in runs if r[2])
+        report["sup_runs"] += sum(1 for r in runs if r[3] == "superscript")
+        report["sub_runs"] += sum(1 for r in runs if r[3] == "subscript")
 
         if ppr is not None and ppr.find(W + "numPr") is not None:
             report["word_lists"] += 1
@@ -153,8 +157,12 @@ def main(argv=None):
     n = args.examples
     print("Paragraphs with text: %d | tables: %d | images: %d"
           % (report["paragraphs"], report["tables"], report["images"]))
-    print("Runs with local bold: %d | local italic: %d"
-          % (report["bold_runs"], report["italic_runs"]))
+    print("Runs with local bold: %d | local italic: %d | superscript: %d | subscript: %d"
+          % (report["bold_runs"], report["italic_runs"], report["sup_runs"], report["sub_runs"]))
+    if report["sub_runs"] or report["sup_runs"]:
+        print("  Define the superscript/subscript character styles (roles, or "
+              "superscriptStyle/subscriptStyle in the script): without them H\u2082O "
+              "becomes H2O.")
     print("\nParagraph styles used:")
     for name, count in sorted(report["styles"].items(), key=lambda kv: -kv[1]):
         print("  %-28s %d" % (name, count))

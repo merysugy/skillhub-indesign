@@ -655,7 +655,7 @@ def check_roles(data, para_by_name, char_by_name):
     roles = data.get("roles") or {}
     para_roles = ("body", "lead", "title", "subtitle", "heading", "bullet", "numbered",
                   "quote", "table_header", "table_body")
-    char_roles = ("bold", "italic", "bold_italic", "superscript", "hashtag")
+    char_roles = ("bold", "italic", "bold_italic", "superscript", "subscript", "hashtag")
     for key in para_roles:
         if roles.get(key) and roles[key] not in para_by_name:
             raise StyleSystemError("roles.%s names %r, which is not a paragraph style"

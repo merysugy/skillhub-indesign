@@ -254,7 +254,8 @@ def fill(idml_path, data, docx_path, master_name=None, replace=False):
         if key in ("body", "lead", "title", "subtitle", "heading", "bullet", "numbered", "quote",
                    "table_header", "table_body") and value:
             refs.para(value)
-        if key in ("bold", "italic", "bold_italic", "superscript", "hashtag") and value:
+        if key in ("bold", "italic", "bold_italic", "superscript", "subscript",
+                   "hashtag") and value:
             refs.char(value)
 
     all_masters = masters(pkg)

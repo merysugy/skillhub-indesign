@@ -22,7 +22,7 @@ what the Word inspection shows (`scripts/inspect_docx.py content.docx`):
   "heading": "Title 3", "bullet": "Bullet", "numbered": "Numbered", "quote": "Quote",
   "table_header": "Table header", "table_body": "Table text",
   "bold": "Bold", "italic": "Italic", "bold_italic": "Bold italic",
-  "superscript": "", "hashtag": "Hashtag",
+  "superscript": "Superscript", "subscript": "Subscript", "hashtag": "Hashtag",
   "title_separator": " - ", "hashtags": "remove"
 }
 ```
@@ -41,12 +41,19 @@ gets its style, in order:
      become `quote`;
    - the first remaining body paragraph, which becomes `lead`. If it is all
      bold, the bold is dropped as paragraph formatting.
-3. Bold, italic and superscript runs become the `bold`, `italic`,
-   `bold_italic` and `superscript` character styles. This doesn't apply in
-   titles and headings.
+3. Bold, italic, superscript and subscript runs become the `bold`, `italic`,
+   `bold_italic`, `superscript` and `subscript` character styles. Bold and
+   italic don't apply in titles and headings; superscript and subscript do.
+   When a run is both bold and superscript or subscript, the position wins.
+   **In scientific or technical text always define `superscript` and
+   `subscript`**: without them H₂O and CO₂ come out as H2O and CO2, and
+   nobody notices until the proofs. `inspect_docx.py` counts these runs, and
+   the build report warns when any were placed as normal text.
 4. `hashtags`: `remove` drops the `#`, `style` applies `hashtag`, and `keep`
    leaves them as they are. Ask before removing text.
-5. Empty paragraphs are removed. Images aren't placed, but the script counts
+5. Empty paragraphs are removed. Manual line breaks (Shift+Enter) stay as
+   InDesign forced line breaks; page and column breaks become a space.
+   Vertical space comes only from the paragraph styles. Images aren't placed, but the script counts
    and reports them.
 
 Only add roles the content needs. A role left out switches its detection off.

@@ -271,6 +271,10 @@
           "type": "string",
           "description": "Character style name."
         },
+        "subscript": {
+          "type": "string",
+          "description": "Character style name. Define it for scientific or technical text (H2O, CO2)."
+        },
         "hashtag": {
           "type": "string",
           "description": "Applied to #hashtags when hashtags is 'style'."

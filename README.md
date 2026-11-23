@@ -128,7 +128,7 @@ an alternative for elements that have to be computed inside the open
 document.
 
 What phase 3 places: titles and subtitles, lead, headings, body, real and typed
-lists, bold/italic/superscript as character styles, quotes, and Word tables as
+lists, bold/italic/superscript/subscript as character styles, quotes, and Word tables as
 InDesign tables with a table style from your identity. Boxes, cards, bands and
 diagrams come as `.idms` blocks in phase 4. Images, covers and master page
 items (header, footer, page number) stay with you.

@@ -10,7 +10,7 @@
 //      become list items, short all-bold paragraphs become headings (the
 //      first one can be the title), the first body paragraph can be the
 //      lead, and manually indented paragraphs become quotes.
-//   4. Turns local bold / italic / superscript into character styles BEFORE
+//   4. Turns local bold / italic / superscript / subscript into character styles BEFORE
 //      clearing overrides, so emphasis survives.
 //   5. Removes empty paragraphs and the Word styles that came with the file.
 //   6. Adds pages and threaded frames until there is no overset text.
@@ -67,6 +67,8 @@ var CONFIG = {
     italicStyle: "",
     boldItalicStyle: "",
     superscriptStyle: "",
+    // Define it for scientific or technical text: without it H2O loses the subscript.
+    subscriptStyle: "",
 
     // Social-media leftovers: "remove" deletes the # of #hashtags, "style"
     // applies hashtagStyle to them, "" leaves them as they are.
@@ -74,6 +76,9 @@ var CONFIG = {
     hashtagStyle: "",
 
     removeEmptyParagraphs: true,
+    // Page, column and frame breaks from Word become a space (none at the end
+    // of a paragraph), as in the IDML route. Forced line breaks stay.
+    cleanBreaks: true,
     removeImportedWordStyles: true,
     maxNewPages: 400
 };
@@ -231,7 +236,7 @@ function run() {
         }
     }
     var charPaths = [CONFIG.boldStyle, CONFIG.italicStyle, CONFIG.boldItalicStyle,
-                     CONFIG.superscriptStyle,
+                     CONFIG.superscriptStyle, CONFIG.subscriptStyle,
                      CONFIG.hashtags === "style" ? CONFIG.hashtagStyle : ""];
     for (i = 0; i < charPaths.length; i++) {
         if (charPaths[i] && !findStyle(doc, charPaths[i], "character")) {
@@ -254,6 +259,7 @@ function run() {
     var charItalic = findStyle(doc, CONFIG.italicStyle, "character");
     var charBoldItalic = findStyle(doc, CONFIG.boldItalicStyle, "character");
     var charSuper = findStyle(doc, CONFIG.superscriptStyle, "character");
+    var charSub = findStyle(doc, CONFIG.subscriptStyle, "character");
 
     var view = doc.viewPreferences;
     var oldH = view.horizontalMeasurementUnits;
@@ -265,7 +271,7 @@ function run() {
 
     var report = { mapped: {}, unmapped: {}, headings: 0, lists: 0, quotes: 0,
                    emphasis: 0, removed: 0, pages: 0, wordStyles: 0,
-                   subtitle: false, hashtags: 0 };
+                   subtitle: false, hashtags: 0, breaks: 0 };
 
     try {
         // Remember which styles existed before the import.
@@ -371,7 +377,7 @@ function run() {
                 continue;
             }
             report.emphasis += emphasisToCharacterStyles(paras[p], charBold, charItalic,
-                                                         charBoldItalic, charSuper);
+                                                         charBoldItalic, charSuper, charSub);
         }
 
         // 4. Apply template paragraph styles and clear local overrides.
@@ -410,6 +416,11 @@ function run() {
         // 4c. Hashtags.
         if (CONFIG.hashtags === "remove" || CONFIG.hashtags === "style") {
             report.hashtags = cleanHashtags(doc, story);
+        }
+
+        // 4d. Page, column and frame breaks out (forced line breaks stay).
+        if (CONFIG.cleanBreaks) {
+            report.breaks = cleanBreaks(story);
         }
 
         // 5. Remove empty paragraphs (back to front).
@@ -453,6 +464,25 @@ function run() {
     showReport(report);
 }
 
+function cleanBreaks(story) {
+    var count = 0;
+    // At the end of a paragraph they go; elsewhere they become one space. A
+    // paragraph left empty is removed in step 5.
+    var rules = [[" *[~M~R~P~L~E][~M~R~P~L~E ]*$", ""],
+                 [" *[~M~R~P~L~E][~M~R~P~L~E ]*", " "]];
+    var i;
+    for (i = 0; i < rules.length; i++) {
+        app.findGrepPreferences = NothingEnum.NOTHING;
+        app.changeGrepPreferences = NothingEnum.NOTHING;
+        app.findGrepPreferences.findWhat = rules[i][0];
+        app.changeGrepPreferences.changeTo = rules[i][1];
+        count += story.changeGrep().length;
+    }
+    app.findGrepPreferences = NothingEnum.NOTHING;
+    app.changeGrepPreferences = NothingEnum.NOTHING;
+    return count;
+}
+
 function cleanHashtags(doc, story) {
     app.findGrepPreferences = NothingEnum.NOTHING;
     app.changeGrepPreferences = NothingEnum.NOTHING;
@@ -487,7 +517,8 @@ function allBold(para) {
     return found;
 }
 
-function emphasisToCharacterStyles(para, charBold, charItalic, charBoldItalic, charSuper) {
+function emphasisToCharacterStyles(para, charBold, charItalic, charBoldItalic, charSuper,
+                                   charSub) {
     var baseStyle = String(para.appliedParagraphStyle.fontStyle);
     var baseBold = isBold(baseStyle);
     var baseItalic = isItalic(baseStyle);
@@ -503,14 +534,19 @@ function emphasisToCharacterStyles(para, charBold, charItalic, charBoldItalic, c
         var bold = isBold(fs) && !baseBold;
         var italic = isItalic(fs) && !baseItalic;
         var style = null;
-        if (bold && italic) {
+        var pos = range.position;
+        // Position first: H2O or m2 read wrong without it, a lost bold on a
+        // footnote mark does not. A range takes one character style.
+        if (charSuper && (pos === Position.SUPERSCRIPT || pos === Position.OT_SUPERSCRIPT)) {
+            style = charSuper;
+        } else if (charSub && (pos === Position.SUBSCRIPT || pos === Position.OT_SUBSCRIPT)) {
+            style = charSub;
+        } else if (bold && italic) {
             style = charBoldItalic || charBold || charItalic;
         } else if (bold) {
             style = charBold;
         } else if (italic) {
             style = charItalic;
-        } else if (charSuper && range.position === Position.SUPERSCRIPT) {
-            style = charSuper;
         }
         if (style) {
             range.appliedCharacterStyle = style;
@@ -550,6 +586,7 @@ function showReport(report) {
     lines.push("Hand-made list items detected: " + report.lists);
     lines.push("Hand-made quotes detected: " + report.quotes);
     lines.push("Emphasis runs turned into character styles: " + report.emphasis);
+    lines.push("Page, column and frame breaks removed: " + report.breaks);
     lines.push("Empty paragraphs removed: " + report.removed);
     lines.push("Word styles removed: " + report.wordStyles);
     lines.push("Pages added: " + report.pages);

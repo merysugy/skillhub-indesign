@@ -51,8 +51,9 @@ Bold lines used as headings, typed dashes, quotes indented by hand. Use
      `firstHeadingStyle`: optional style for the first one (the title).
    - `bulletStyle`, `numberedStyle`: for real Word lists and typed lists.
    - `quoteStyle`: for manually indented paragraphs.
-   - `boldStyle`, `italicStyle`, `boldItalicStyle`, `superscriptStyle`:
-     character styles that keep Word emphasis.
+   - `boldStyle`, `italicStyle`, `boldItalicStyle`, `superscriptStyle`,
+     `subscriptStyle`: character styles that keep Word emphasis and position.
+     Fill in `subscriptStyle` for scientific or technical text (H₂O, CO₂).
    - Leave any style `""` to switch that detection off.
    - **Write every non-ASCII character as a `\uXXXX` escape**
      (`"T\u00EDtulos:T\u00EDtulo 1"` for "Títulos:Título 1"): ExtendScript may
@@ -69,12 +70,15 @@ What it does, in order (all undoable in one step):
    lists (removes the typed marker; the style adds a real bullet/number);
    short all-bold headings (the first one as title); the first body paragraph
    as lead; indented quotes.
-3. Turns local bold, italic, bold italic and superscript into character
-   styles. **This must happen before clearing overrides**, otherwise
-   emphasis is lost.
+3. Turns local bold, italic, bold italic, superscript and subscript
+   (including OpenType superscript and subscript) into character styles.
+   When a run is both, the position wins. **This must happen before clearing
+   overrides**, otherwise emphasis and position are lost.
 4. Applies the template paragraph styles, clearing local overrides
    (character styles stay).
-5. Removes empty paragraphs and the styles that came in with the Word file.
+5. Removes page, column and frame breaks from Word (`cleanBreaks`; forced
+   line breaks stay, as in the IDML route), removes empty paragraphs, and
+   removes the styles that came in with the Word file.
 6. Adds pages and threaded frames (with the same columns as the first
    frame) until there is no overset text.
 7. Shows a report: paragraphs per style, detections, Word styles not mapped.

@@ -4,7 +4,7 @@ idml_content.py - Shared code for placing Word content inside an IDML package.
 Used by build_idml.py (route A: new template + content) and fill_idml.py
 (route B: the user's own IDML + content). It:
 
-  1. reads a .docx (paragraphs, runs with bold/italic/superscript, real Word
+  1. reads a .docx (paragraphs, runs with bold/italic/superscript/subscript, real Word
      lists, tables with header rows and merged cells) - standard library only;
   2. classifies every paragraph into the roles of the style system
      (`roles` block of style-system.json): title, subtitle, lead, headings,
@@ -129,12 +129,13 @@ def _read_paragraph(p, para_styles, char_styles, numbering):
     runs = []
     for r in _runs(p):
         rpr = r.find(W + "rPr")
-        bold = italic = sup = False
+        bold = italic = sup = subs = False
         if rpr is not None:
             bold = _on(rpr.find(W + "b"))
             italic = _on(rpr.find(W + "i"))
             va = rpr.find(W + "vertAlign")
             sup = va is not None and va.get(W + "val") == "superscript"
+            subs = va is not None and va.get(W + "val") == "subscript"
             rs = rpr.find(W + "rStyle")
             if rs is not None:
                 cname = char_styles.get(rs.get(W + "val"), rs.get(W + "val")).lower()
@@ -148,15 +149,20 @@ def _read_paragraph(p, para_styles, char_styles, numbering):
             elif tag == "tab":
                 parts.append("\t")
             elif tag in ("br", "cr"):
+                # A line break stays a forced line break (U+2028 in InDesign);
+                # a page or column break becomes a space so words never glue.
                 if child.get(W + "type") not in ("page", "column"):
                     parts.append(u" ")
+                else:
+                    parts.append(u" ")
             elif tag == "noBreakHyphen":
                 parts.append(u"‑")
             elif tag in ("drawing", "pict", "object"):
                 images += 1
         text = "".join(parts)
         if text:
-            runs.append({"text": text, "bold": bold, "italic": italic, "sup": sup})
+            runs.append({"text": text, "bold": bold, "italic": italic, "sup": sup,
+                         "sub": subs})
     return {"type": "p", "style": style, "list": list_type, "indent_pt": indent,
             "runs": runs, "images": images}
 
@@ -266,6 +272,7 @@ class Classifier(object):
                 self.mapping[word_name.strip().lower()] = style["name"]
         self.report = {"styles": {}, "unmapped": {}, "headings": 0, "lists": 0, "quotes": 0,
                        "tables": 0, "images": 0, "empty": 0, "hashtags": 0,
+                       "position_lost": 0,
                        "title_split": False, "lead": False}
 
     def role(self, key):
@@ -357,14 +364,21 @@ class Classifier(object):
             style = None
             bold = r["bold"] and not no_emphasis and not drop_bold
             italic = r["italic"] and not no_emphasis
-            if bold and italic:
+            # Position first: H2O or m2 read wrong without it, a lost bold on
+            # a footnote mark does not. One character style per run.
+            if r.get("sup") and self.role("superscript"):
+                style = self.role("superscript")
+            elif r.get("sub") and self.role("subscript"):
+                style = self.role("subscript")
+            elif bold and italic:
                 style = self.role("bold_italic") or self.role("bold")
             elif bold:
                 style = self.role("bold")
             elif italic:
                 style = self.role("italic")
-            elif r.get("sup"):
-                style = self.role("superscript")
+            if r.get("sup") and not self.role("superscript") or \
+                    r.get("sub") and not self.role("subscript"):
+                self.report["position_lost"] += 1
             out.extend(self._hashtags(r["text"], style))
         merged = []
         for text, style in out:
@@ -694,6 +708,10 @@ def report_lines(report, pages):
     if report["images"]:
         lines.append("  Images in the Word file (not placed, add them in InDesign): %d"
                      % report["images"])
+    if report["position_lost"]:
+        lines.append("  WARNING: %d superscript/subscript runs placed as normal text "
+                     "(H2O instead of H\u2082O): set roles.superscript / roles.subscript"
+                     % report["position_lost"])
     if report["unmapped"]:
         lines.append("  Word styles with no maps_from (set to the body style): %s"
                      % ", ".join("%s (%d)" % kv for kv in sorted(report["unmapped"].items())))
